@@ -1,77 +1,66 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- MOBILE META -->
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>PMB AR Campus</title>
+    
+    <!-- SCRIPTS -->
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- LOADING SCREEN -->
-    <div id="loadingScreen" class="loading-screen">
-        <div class="logo">🏛️ PMB AR</div>
-        <div class="spinner"></div>
-        <p>Memuat kamera...</p>
-    </div>
-
-    <!-- FPS -->
-    <div id="fpsCounter" class="fps-counter hidden">
-        <span id="fpsValue">FPS: 60</span>
-    </div>
-    
-    <div id="statsPanel" class="stats-panel hidden"></div>
-    <button id="infoToggleBtn" class="info-toggle hidden">ℹ️</button>
-
-    <!-- CONTROLS -->
-    <div id="wadah-tombol" class="controls-top hidden">
-        <button id="tombol-henti" class="btn btn-danger">⏹️ Stop AR</button>
-    </div>
-
-    <div id="wadah-kontrol" class="controls-bottom hidden">
-        <button id="tombol-layar-penuh" class="btn btn-sec">⛶</button>
-        <button id="tombol-info" class="btn btn-sec">ℹ️</button>
-        <button id="tombol-suara" class="btn btn-sec active">🔊</button>
-        <button id="tombol-screenshot" class="btn btn-sec">📸</button>
-        <button id="tombol-tema" class="btn btn-sec">🌙</button>
-    </div>
-
-    <!-- AR SCENE (HIDDEN AWAL) -->
-    <a-scene id="arScene" embedded arjs="sourceType: webcam; trackingMethod: best; debugUIEnabled: false;" class="ar-scene hidden">
-        <a-marker type="natural-image" src="targets.mind">
-            <a-entity id="maryam-model" gltf-model="url(Maryam.glb)" 
-                      position="0 0 -2" scale="0.8 0.8 0.8" rotation="-20 0 0"
-                      class="bisa-diklik" interaksi-klik 
-                      animation="property: rotation; to: 0 360 0; loop: true; dur: 20000"></a-entity>
-
-            <a-entity id="nabi-model" gltf-model="url(Nabi.glb)" 
-                      position="1.5 0 -2" scale="0.6 0.6 0.6"
-                      class="bisa-diklik" interaksi-klik 
-                      animation="property: rotation; to: 360 0 0; loop: true; dur: 15000"></a-entity>
-
-            <a-text value="👆 TAP MODEL\nuntuk PMB Info!" position="0 1.5 -2.5" 
-                    align="center" color="#00ff88" scale="0.5 0.5 0.5"></a-text>
-        </a-marker>
-
-        <a-light type="ambient" color="#404040" intensity="0.6"></a-light>
-        <a-light type="directional" color="#ffffff" intensity="0.8" position="1 2 0"></a-light>
-
-        <a-entity camera look-controls>
-            <a-entity cursor="rayOrigin: mouse" raycaster="objects: .bisa-diklik; far: 20"></a-entity>
-        </a-entity>
-    </a-scene>
-
-    <!-- START BUTTON -->
-    <div id="startScreen" class="start-screen">
-        <div class="start-content">
-            <h1>🏛️ PMB AR Campus</h1>
-            <p>Scan logo kampus untuk info PMB!</p>
-            <button id="startAR" class="start-btn">🚀 Mulai AR</button>
-            <p class="start-note">Gunakan kamera belakang</p>
+    <!-- SPLASH SCREEN MOBILE -->
+    <div id="splash" class="splash">
+        <div class="splash-content">
+            <div class="logo">🏛️ PMB AR</div>
+            <div class="spinner"></div>
+            <p id="splashText">Mulai...</p>
         </div>
     </div>
+
+    <!-- CONTROLS MOBILE -->
+    <div id="topControls" class="top-controls">
+        <div id="fpsCounter" class="fps">60 FPS</div>
+        <button id="infoBtn" class="control-btn info-btn">ℹ️</button>
+    </div>
+
+    <div id="bottomControls" class="bottom-controls">
+        <button id="stopAR" class="control-btn stop-btn">⏹️</button>
+        <button id="fullscreen" class="control-btn">⛶</button>
+        <button id="screenshot" class="control-btn">📸</button>
+        <button id="sound" class="control-btn active">🔊</button>
+    </div>
+
+    <!-- INFO PANEL MOBILE -->
+    <div id="infoPanel" class="info-panel">
+        <div id="infoContent"></div>
+        <button id="closeInfo" class="close-btn">✕</button>
+    </div>
+
+    <!-- AR SCENE -->
+    <a-scene id="arScene" embedded arjs="sourceType: webcam; trackingMethod: best; debugUIEnabled: false; sourceWidth:640; sourceHeight:480;">
+        <a-marker type="natural-image" src="targets.mind">
+            <!-- MODELS -->
+            <a-entity gltf-model="url(Maryam.glb)" position="-0.5 0 -1.5" scale="0.6 0.6 0.6" 
+                      class="interactive" interaksi-klik animation="property: rotation; to: 0 360 0; loop: true; dur: 15000"></a-entity>
+            
+            <a-entity gltf-model="url(Nabi.glb)" position="0.8 0 -1.5" scale="0.4 0.4 0.4" 
+                      class="interactive" interaksi-klik animation="property: rotation; to: 360 0 0; loop: true; dur: 12000"></a-entity>
+            
+            <!-- LABEL -->
+            <a-text value="👆 TAP\nuntuk PMB!" position="0 0.8 -1.8" color="#00ff88" align="center" scale="0.4 0.4 0.4"></a-text>
+        </a-marker>
+        
+        <a-light type="ambient" color="#555" intensity="0.7"></a-light>
+        <a-entity camera look-controls>
+            <a-entity cursor="rayOrigin: mouse" raycaster="objects: .interactive"></a-entity>
+        </a-entity>
+    </a-scene>
 
     <script src="script.js"></script>
 </body>

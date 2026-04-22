@@ -1,117 +1,212 @@
-// STATE
-let isARRunning = false, isDarkMode = false, modelScale = 0.8;
+// ========================================
+// PMB AR MOBILE - FULL SCRIPT
+// ========================================
 
-// LOADING
-window.addEventListener('load', () => {
+// MOBILE DETECTION & INIT
+if (!('ontouchstart' in window) && !navigator.maxTouchPoints) {
+    document.body.innerHTML = `
+        <div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#1a1a2e;color:white;font-family:system-ui;font-size:1.5rem;text-align:center;padding:2rem">
+            <div>
+                <h1>📱 AR Hanya untuk HP!</h1>
+                <p>Buka di Chrome/Safari mobile</p>
+            </div>
+        </div>
+    `;
+    throw new Error('Desktop not supported');
+}
+
+// STATE
+let isDarkMode = false, modelScale = 0.6, isSoundOn = true;
+
+// SPLASH SCREEN
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('splashText').textContent = 'Memuat kamera...';
+    
     setTimeout(() => {
-        document.getElementById('loadingScreen').style.opacity = '0';
-        setTimeout(() => document.getElementById('loadingScreen').remove(), 500);
-    }, 1500);
+        document.getElementById('splash').style.transition = 'opacity 0.4s';
+        document.getElementById('splash').style.opacity = '0';
+        
+        setTimeout(() => {
+            document.getElementById('splash').remove();
+            startAR();
+        }, 400);
+    }, 800);
 });
 
-// START AR (FIX KAMERA!)
-document.getElementById('startAR').onclick = () => {
-    const startScreen = document.getElementById('startScreen');
+function startAR() {
     const arScene = document.getElementById('arScene');
     
-    startScreen.style.opacity = '0';
-    setTimeout(() => {
-        startScreen.style.display = 'none';
-        arScene.classList.remove('hidden');
-        document.getElementById('wadah-tombol').classList.remove('hidden');
-        document.getElementById('wadah-kontrol').classList.remove('hidden');
-        document.getElementById('fpsCounter').classList.remove('hidden');
-        document.getElementById('infoToggleBtn').classList.remove('hidden');
-        isARRunning = true;
+    // SHOW UI
+    document.getElementById('topControls').style.opacity = '1';
+    document.getElementById('bottomControls').style.opacity = '1';
+    
+    // START CAMERA
+    if (arScene.components.arjs) {
+        arScene.components.arjs.start();
+    }
+    
+    // FPS LOOP
+    setInterval(() => {
+        const fps = Math.round(1000 / (performance.now() % 1000));
+        document.getElementById('fpsCounter').textContent = `${fps} FPS`;
     }, 500);
     
-    // FORCE CAMERA START
-    setTimeout(() => location.reload(), 1000);
-};
-
-// STOP AR
-document.getElementById('tombol-henti').onclick = () => {
-    location.reload();
-};
-
-// FPS COUNTER
-let lastTime = 0, frameCount = 0;
-function updateFPS(time) {
-    frameCount++;
-    if (time - lastTime >= 1000) {
-        document.getElementById('fpsValue').textContent = `FPS: ${Math.round(frameCount * 1000 / (time - lastTime))}`;
-        frameCount = 0; lastTime = time;
-    }
-    requestAnimationFrame(updateFPS);
+    console.log('🚀 AR Started - Mobile Ready!');
 }
-requestAnimationFrame(updateFPS);
 
-// INTERAKSI 3D
+// ========================================
+// 3D INTERACTION
+// ========================================
 AFRAME.registerComponent('interaksi-klik', {
-    init: function () {
+    init: function() {
         const el = this.el;
+        
+        // TAP EFFECT
         el.addEventListener('click', () => {
-            const scale = el.getAttribute('scale');
-            el.setAttribute('scale', `${scale.x * 1.3} ${scale.y * 1.3} ${scale.z * 1.3}`);
-            setTimeout(() => el.setAttribute('scale', scale), 250);
+            const currentScale = el.getAttribute('scale');
+            el.setAttribute('scale', {
+                x: currentScale.x * 1.25,
+                y: currentScale.y * 1.25, 
+                z: currentScale.z * 1.25
+            });
             
-            // PMB DATA
-            const pmb = [
-                {title: "🖥️ Teknik Informatika", info: "AI & Game Dev Lab", biaya: "Rp 15.000.000"},
-                {title: "🏗️ Teknik Sipil", info: "Proyek BUMN", biaya: "Rp 12.000.000"},
-                {title: "💊 Farmasi", info: "Lab BPOM Certified", biaya: "Rp 18.000.000"}
-            ][Math.floor(Math.random() * 3)];
+            setTimeout(() => {
+                el.setAttribute('scale', currentScale);
+            }, 200);
             
-            document.getElementById('statsPanel').innerHTML = `
-                <div style="text-align:center">
-                    <h3 style="color:#00ff88;margin-bottom:10px">${pmb.title}</h3>
-                    <p>${pmb.info}</p>
-                    <p style="font-size:1.1em;font-weight:bold;color:#ffaa00">${pmb.biaya}/tahun</p>
-                    <button onclick="window.open('https://pmb.kampus.com')" 
-                            style="background:linear-gradient(45deg,#00ff88,#00cc6a);color:black;padding:12px 24px;border:none;border-radius:25px;font-weight:bold;margin-top:15px;width:100%;cursor:pointer;box-shadow:0 5px 20px rgba(0,255,136,0.4)">
-                        📝 DAFTAR SEKARANG
-                    </button>
-                </div>
-            `;
-            document.getElementById('infoToggleBtn').click();
+            // SHOW PMB INFO
+            showPMBInfo();
+        });
+        
+        // HOVER EFFECT
+        el.addEventListener('mouseenter', () => {
+            el.object3D.scale.multiplyScalar(1.05);
+        });
+        el.addEventListener('mouseleave', () => {
+            el.object3D.scale.multiplyScalar(0.952); // 1/1.05
         });
     }
 });
 
+// ========================================
+// PMB INFO SYSTEM
+// ========================================
+const jurusanData = [
+    {
+        nama: "🖥️ Teknik Informatika",
+        info: "AI, Game Development, Web3",
+        biaya: "Rp 15.000.000",
+        link: "pmb.ti.kampus.ac.id"
+    },
+    {
+        nama: "🏗️ Teknik Sipil", 
+        info: "Proyek BUMN, BIM Technology",
+        biaya: "Rp 12.000.000",
+        link: "pmb.sipil.kampus.ac.id"
+    },
+    {
+        nama: "💊 Farmasi",
+        info: "Lab BPOM, Industri Farmasi",
+        biaya: "Rp 18.000.000", 
+        link: "pmb.farmasi.kampus.ac.id"
+    }
+];
+
+function showPMBInfo() {
+    const randomJurusan = jurusanData[Math.floor(Math.random() * jurusanData.length)];
+    const content = document.getElementById('infoContent');
+    
+    content.innerHTML = `
+        <h3 style="color:#00ff88;margin:0 0 12px 0;font-size:1.3em">${randomJurusan.nama}</h3>
+        <p style="margin:8px 0;font-size:0.95em;opacity:0.9">${randomJurusan.info}</p>
+        <p style="font-weight:bold;color:#ffdd44;font-size:1.1em;margin:10px 0 15px 0">
+            💰 ${randomJurusan.biaya}/tahun
+        </p>
+        <button onclick="daftarPMB('${randomJurusan.link}')" 
+                style="width:100%;padding:14px 20px;background:linear-gradient(45deg,#00ff88,#00cc6a);color:black;border:none;border-radius:25px;font-weight:700;font-size:1rem;box-shadow:0 6px 25px rgba(0,255,136,0.4);cursor:pointer;transition:all 0.2s">
+            📝 DAFTAR SEKARANG
+        </button>
+    `;
+    
+    document.getElementById('infoPanel').style.display = 'block';
+}
+
+function daftarPMB(link) {
+    window.open(`https://${link}`, '_blank');
+    if (isSoundOn) playClickSound();
+}
+
+// ========================================
 // BUTTON CONTROLS
-document.getElementById('tombol-layar-penuh').onclick = () => document.documentElement.requestFullscreen?.() || alert('Fullscreen tidak tersedia');
-document.getElementById('tombol-info').onclick = () => document.getElementById('infoToggleBtn').click();
-document.getElementById('tombol-suara').onclick = () => document.getElementById('tombol-suara').classList.toggle('active');
-document.getElementById('tombol-screenshot').onclick = () => html2canvas(document.getElementById('arScene')).then(c => {
-    const a = document.createElement('a'); a.download = `PMB-AR-${Date.now()}.png`; a.href = c.toDataURL(); a.click();
-});
-document.getElementById('tombol-tema').onclick = () => {
-    document.body.classList.toggle('dark-mode');
-    isDarkMode = !isDarkMode;
+// ========================================
+document.getElementById('infoBtn').onclick = () => {
+    document.getElementById('infoPanel').style.display = 'block';
 };
 
-document.getElementById('infoToggleBtn').onclick = () => {
-    const panel = document.getElementById('statsPanel');
-    const fps = document.getElementById('fpsCounter');
-    const btn = document.getElementById('infoToggleBtn');
-    
-    if (fps.classList.contains('show')) {
-        fps.classList.remove('show');
-        panel.classList.add('hidden');
-        btn.classList.remove('active');
+document.getElementById('closeInfo').onclick = () => {
+    document.getElementById('infoPanel').style.display = 'none';
+};
+
+document.getElementById('fullscreen').onclick = () => {
+    if (document.fullscreenElement) {
+        document.exitFullscreen();
     } else {
-        fps.classList.add('show');
-        panel.classList.remove('hidden');
-        btn.classList.add('active');
-        panel.innerHTML = `
-            <h3 style="color:#00ff88">👥 Kelompok Pembuat</h3>
-            <div style="text-align:center;font-size:0.95em">
-                <p>1. Muhammad Farid Donovant<br><small>24EO10021</small></p>
-                <p>2. Dhiane Isya Naa'imah<br><small>24EO10001</small></p>
-                <p>3. Jafar Khotob Al Fadil<br><small>24EO10015</small></p>
-            </div>
-        `;
+        document.documentElement.requestFullscreen().catch(() => {});
     }
 };
 
-console.log('🚀 PMB AR Premium Ready!');
+document.getElementById('screenshot').onclick = async () => {
+    try {
+        const canvas = await html2canvas(document.getElementById('arScene'), {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: null
+        });
+        
+        const link = document.createElement('a');
+        link.download = `PMB-AR-${new Date().toISOString().slice(0,10)}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    } catch (e) {
+        alert('Screenshot gagal - coba lagi');
+    }
+};
+
+document.getElementById('sound').onclick = () => {
+    isSoundOn = !isSoundOn;
+    document.getElementById('sound').classList.toggle('active', isSoundOn);
+};
+
+// STOP AR
+document.getElementById('stopAR').onclick = () => {
+    if (confirm('Stop AR dan reload?')) {
+        location.reload();
+    }
+};
+
+// ========================================
+// INFO DEFAULT (KELOMPOK)
+document.getElementById('infoContent').innerHTML = `
+    <h3 style="color:#00ff88">👥 Kelompok Pembuat</h3>
+    <div style="font-size:0.95em;line-height:1.4">
+        <p><strong>1. Muhammad Farid Donovant</strong><br><small>24EO10021</small></p>
+        <p><strong>2. Dhiane Isya Naa'imah</strong><br><small>24EO10001</small></p>
+        <p><strong>3. Jafar Khotob Al Fadil</strong><br><small>24EO10015</small></p>
+    </div>
+`;
+
+// SOUND EFFECTS (OPTIONAL)
+function playClickSound() {
+    if (isSoundOn) {
+        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEA...'); // base64 click sound
+        audio.volume = 0.3; audio.play().catch(() => {});
+    }
+}
+
+// PERF PERF
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+}
+
+console.log('✅ PMB AR Mobile - FULLY LOADED');
