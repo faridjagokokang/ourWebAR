@@ -21,33 +21,78 @@ AFRAME.registerComponent('interaksi-objek', {
     const panel = el.parentNode.querySelector('.panel-info');
     let muncul = false;
 
-    /* Mouseenter: Hover effect - perubahan visual saat hover */
     el.addEventListener('mouseenter', () => {
       el.classList.add('hover-state');
       putarSuara('hover');
+      
+      const currentScale = el.getAttribute('scale') || {x: 1.2, y: 1.2, z: 1.2};
+      el.setAttribute('animation__hover_scale', `property: scale; to: ${currentScale.x * 1.05} ${currentScale.y * 1.05} ${currentScale.z * 1.05}; dur: 300; easing: easeOutQuad`);
     });
 
-    /* Mouseleave: Hapus hover effect */
     el.addEventListener('mouseleave', () => {
       el.classList.remove('hover-state');
+      
+      const currentScale = el.getAttribute('scale') || {x: 1.2, y: 1.2, z: 1.2};
+      // Revert hover scale by removing it so it falls back to its normal scale attribute or we animate back
+      // Since scale might have been changed by controls, we animate back to currentScale / 1.05
+      el.setAttribute('animation__hover_scale', `property: scale; to: ${currentScale.x / 1.05} ${currentScale.y / 1.05} ${currentScale.z / 1.05}; dur: 300; easing: easeOutQuad`);
     });
 
-    /* Click: Instant feedback dengan animasi pulse */
     el.addEventListener('click', () => {
-      /* INSTANT FEEDBACK - Animasi seketika (~100ms) */
-      el.classList.add('active');
-      setTimeout(() => {
-        el.classList.remove('active');
-      }, 400);
+      const currentScale = el.getAttribute('scale') || {x: 1.2, y: 1.2, z: 1.2};
+      el.setAttribute('animation__click_scale', `property: scale; to: ${currentScale.x * 1.2} ${currentScale.y * 1.2} ${currentScale.z * 1.2}; dur: 200; easing: easeOutQuad; dir: alternate; loop: 1`);
 
       muncul = !muncul;
-      panel.setAttribute('visible', muncul);
+      if(panel) {
+        panel.setAttribute('visible', muncul);
+        if(muncul) {
+          panel.setAttribute('animation__appear', 'property: scale; from: 0.1 0.1 0.1; to: 1 1 1; dur: 500; easing: easeOutElastic');
+        } else {
+          panel.removeAttribute('animation__appear');
+        }
+      }
       putarSuara('click');
       perbaruiStatistik('interaction');
 
-      const modelIndex = el.parentNode.getAttribute('mindar-image-target') ? 
+      const modelIndex = el.parentNode.getAttribute('mindar-image-target') ?
         el.parentNode.getAttribute('mindar-image-target').split(':')[1].trim() : 0;
       tampilkanInfoModel(modelIndex);
+    });
+  }
+});
+
+AFRAME.registerComponent('interaksi-brosur', {
+  init: function () {
+    const el = this.el;
+    let diputar = false;
+
+    el.addEventListener('mouseenter', () => {
+      el.classList.add('hover-state');
+      if (typeof putarSuara === 'function') putarSuara('hover');
+      
+      const currentScale = el.getAttribute('scale') || {x: 1, y: 1, z: 1};
+      el.setAttribute('animation__hover_scale', `property: scale; to: ${currentScale.x * 1.05} ${currentScale.y * 1.05} ${currentScale.z * 1.05}; dur: 300; easing: easeOutQuad`);
+    });
+
+    el.addEventListener('mouseleave', () => {
+      el.classList.remove('hover-state');
+      const currentScale = el.getAttribute('scale') || {x: 1, y: 1, z: 1};
+      el.setAttribute('animation__hover_scale', `property: scale; to: ${currentScale.x / 1.05} ${currentScale.y / 1.05} ${currentScale.z / 1.05}; dur: 300; easing: easeOutQuad`);
+    });
+
+    el.addEventListener('click', () => {
+      diputar = !diputar;
+      const targetRot = diputar ? "0 180 0" : "0 0 0";
+
+      // Hapus animasi sebelumnya lalu set animasi baru untuk rotasi 180 derajat
+      el.removeAttribute('animation__rot');
+      el.setAttribute('animation__rot', `property: rotation; to: ${targetRot}; dur: 1000; easing: easeInOutElastic`);
+      
+      const currentScale = el.getAttribute('scale') || {x: 1, y: 1, z: 1};
+      el.setAttribute('animation__click_scale', `property: scale; to: ${currentScale.x * 1.2} ${currentScale.y * 1.2} ${currentScale.z * 1.2}; dur: 500; easing: easeOutQuad; dir: alternate; loop: 1`);
+
+      if (typeof putarSuara === 'function') putarSuara('click');
+      if (typeof perbaruiStatistik === 'function') perbaruiStatistik('interaction');
     });
   }
 });
@@ -56,11 +101,11 @@ function tampilkanInfoModel(modelIndex) {
   const models = ['nabi', 'maryam'];
   const model = models[modelIndex] || 'nabi';
   const info = terjemahan[bahasaSaatIni][model];
-  
+
   const titleEl = document.querySelector('#judul-modal');
   const bodyEl = document.querySelector('#isi-modal');
   const modalEl = document.querySelector('#modal-info-model');
-  
+
   if (titleEl) titleEl.textContent = info.title;
   if (bodyEl) bodyEl.innerHTML = `<p>${info.desc}</p>`;
   if (modalEl) modalEl.classList.remove('hidden');
@@ -163,7 +208,7 @@ function perbaruiStatistik(type) {
     const el = document.querySelector('#hitung-interaksi');
     if (el) el.textContent = jumlahInteraksi;
   }
-  
+
   const elapsedSeconds = Math.floor((Date.now() - waktuMulaiTampilan) / 1000);
   const el2 = document.querySelector('#waktu-tampilan');
   if (el2) el2.textContent = elapsedSeconds + 's';
@@ -220,6 +265,10 @@ document.addEventListener('DOMContentLoaded', () => {
     stopBtn.classList.remove('hidden');
     perbaruiStatus('Memulai AR...', false);
     tampilkanLoading(true);
+    
+    // Show scanner guide, scan problem btn
+    const scannerGuide = document.querySelector('#scanner-guide');
+    const scanProblemBtn = document.querySelector('#scan-problem-btn');
 
     try {
       setTimeout(() => {
@@ -233,6 +282,12 @@ document.addEventListener('DOMContentLoaded', () => {
           perbaruiStatus('✓ AR Aktif - Arahkan ke marker', true);
           instructionsEl.classList.add('hidden');
           modelControlsDiv.classList.remove('hidden');
+          
+          const scannerGuide = document.querySelector('#scanner-guide');
+          const scanProblemBtn = document.querySelector('#scan-problem-btn');
+          if (scannerGuide) scannerGuide.classList.remove('hidden');
+          if (scanProblemBtn) scanProblemBtn.classList.remove('hidden');
+
           putarSuara('success');
         }, 1000);
       }, 1500);
@@ -251,12 +306,18 @@ document.addEventListener('DOMContentLoaded', () => {
     startBtn.style.display = 'block';
     startBtn.disabled = false;
     modelControlsDiv.classList.add('hidden');
+    
+    const scannerGuide = document.querySelector('#scanner-guide');
+    const scanProblemBtn = document.querySelector('#scan-problem-btn');
+    if (scannerGuide) scannerGuide.classList.add('hidden');
+    if (scanProblemBtn) scanProblemBtn.classList.add('hidden');
+
     perbaruiStatus('Menghentikan AR...', false);
     tampilkanLoading(true);
 
     try {
       sceneEl.systems['mindar-image-system'].stop();
-      
+
       setTimeout(() => {
         tampilkanLoading(false);
         perbaruiStatus('✓ Siap untuk AR', false);
@@ -501,7 +562,7 @@ document.addEventListener('DOMContentLoaded', () => {
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
     const currentTime = Date.now();
-    
+
     if (currentTime - lastTouchTime < 300) {
       aturUlangModel();
       putarSuara('success');
@@ -531,6 +592,16 @@ document.addEventListener('DOMContentLoaded', () => {
       if (arActive && markerIndicator) {
         markerIndicator.classList.remove('hidden');
         putarSuara('click');
+        
+        const scannerGuide = document.querySelector('#scanner-guide');
+        if (scannerGuide) scannerGuide.classList.add('hidden');
+        
+        // Pop-in animation
+        const models = entity.querySelectorAll('.bisa-diklik');
+        models.forEach(model => {
+           const currentScale = model.getAttribute('scale') || {x: 1, y: 1, z: 1};
+           model.setAttribute('animation__popin', `property: scale; from: 0 0 0; to: ${currentScale.x} ${currentScale.y} ${currentScale.z}; dur: 1000; easing: easeOutElastic`);
+        });
       }
     });
 
@@ -538,6 +609,13 @@ document.addEventListener('DOMContentLoaded', () => {
       if (markerIndicator) {
         markerIndicator.classList.add('hidden');
       }
+      
+      const scannerGuide = document.querySelector('#scanner-guide');
+      if (scannerGuide) scannerGuide.classList.remove('hidden');
+      const models = entity.querySelectorAll('.bisa-diklik');
+      models.forEach(model => {
+         model.removeAttribute('animation__popin');
+      });
     });
   });
 
