@@ -64,7 +64,7 @@ AFRAME.registerComponent('interaksi-objek', {
 AFRAME.registerComponent('interaksi-brosur', {
   init: function () {
     const el = this.el;
-    let diputar = false;
+    el.diputar = false;
 
     el.addEventListener('mouseenter', () => {
       el.classList.add('hover-state');
@@ -81,8 +81,8 @@ AFRAME.registerComponent('interaksi-brosur', {
     });
 
     el.addEventListener('click', () => {
-      diputar = !diputar;
-      const targetRot = diputar ? "0 180 0" : "0 0 0";
+      el.diputar = !el.diputar;
+      const targetRot = el.diputar ? "0 180 0" : "0 0 0";
 
       // Hapus animasi sebelumnya lalu set animasi baru untuk rotasi 180 derajat
       el.removeAttribute('animation__rot');
@@ -512,18 +512,22 @@ document.addEventListener('DOMContentLoaded', () => {
     modelRotation += degrees;
     const models = document.querySelectorAll('.bisa-diklik');
     models.forEach(model => {
-      model.setAttribute('rotation', `0 ${modelRotation} 0`);
+      if (!model.hasAttribute('interaksi-brosur')) {
+        model.setAttribute('rotation', `0 ${modelRotation} 0`);
+      }
     });
   }
 
   function perbesarModel(factor) {
-    modelScale.x *= factor;
-    modelScale.y *= factor;
-    modelScale.z *= factor;
-
     const models = document.querySelectorAll('.bisa-diklik');
     models.forEach(model => {
-      model.setAttribute('scale', `${modelScale.x} ${modelScale.y} ${modelScale.z}`);
+      let currentScale = model.getAttribute('scale') || {x: 1, y: 1, z: 1};
+      // Parse scale if it's a string instead of object
+      if (typeof currentScale === 'string') {
+        const parts = currentScale.split(' ').map(parseFloat);
+        currentScale = {x: parts[0], y: parts[1], z: parts[2]};
+      }
+      model.setAttribute('scale', `${currentScale.x * factor} ${currentScale.y * factor} ${currentScale.z * factor}`);
     });
   }
 
@@ -532,8 +536,15 @@ document.addEventListener('DOMContentLoaded', () => {
     modelScale = { x: 1.2, y: 1.2, z: 1.2 };
     const models = document.querySelectorAll('.bisa-diklik');
     models.forEach(model => {
-      model.setAttribute('rotation', '0 0 0');
-      model.setAttribute('scale', '1.2 1.2 1.2');
+      if (model.hasAttribute('interaksi-brosur')) {
+        model.setAttribute('rotation', '0 0 0');
+        model.setAttribute('scale', '1 1 1');
+        model.removeAttribute('animation__rot');
+        model.diputar = false;
+      } else {
+        model.setAttribute('rotation', '0 0 0');
+        model.setAttribute('scale', '1.2 1.2 1.2');
+      }
     });
   }
 
@@ -596,7 +607,9 @@ setInterval(() => {
     autoRotAngle += 1;
     const models = document.querySelectorAll('.bisa-diklik');
     models.forEach(model => {
-      model.setAttribute('rotation', `0 ${autoRotAngle} 0`);
+      if (!model.hasAttribute('interaksi-brosur')) {
+        model.setAttribute('rotation', `0 ${autoRotAngle} 0`);
+      }
     });
   }
 }, 30);
