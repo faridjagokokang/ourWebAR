@@ -231,23 +231,45 @@ body::after {
   pointer-events: none;
   z-index: 50;
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
+  gap: 20px;
   transition: opacity 0.5s ease;
 }
 
 #scanner-guide.hidden {
   opacity: 0;
+  pointer-events: none;
 }
 
 .scanner-frame {
-  width: 60%;
-  height: 55%;
+  width: 45%;
+  height: 65%;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.3);
+}
+
+#pamflet-info {
+  width: 35%;
+  height: 65%;
+  border-radius: 30px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  transition: all 0.3s;
+}
+
+#pamflet-info img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 20px;
 }
 
 .scanner-pin {

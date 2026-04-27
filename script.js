@@ -111,72 +111,48 @@ function tampilkanInfoModel(modelIndex) {
   if (modalEl) modalEl.classList.remove('hidden');
 }
 
-const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 let suaraAktif = localStorage.getItem('wabAR_sound') !== 'false';
 
+const sounds = {
+  hover: new Audio('./hover.ogg'),
+  click: new Audio('./click.ogg'),
+  success: new Audio('./success.ogg'),
+  error: new Audio('./error.ogg')
+};
+
+// 🔥 WAJIB: preload + unlock audio setelah user interaction pertama
+let audioUnlocked = false;
+
+function unlockAudio() {
+  if (audioUnlocked) return;
+
+  Object.values(sounds).forEach(sound => {
+    sound.volume = 1;
+    sound.play().then(() => {
+      sound.pause();
+      sound.currentTime = 0;
+    }).catch(() => {});
+  });
+
+  audioUnlocked = true;
+}
+
+// trigger sekali saat user pertama klik layar
+document.addEventListener('click', unlockAudio, { once: true });
+document.addEventListener('touchstart', unlockAudio, { once: true });
+
 function putarSuara(type) {
-  if (!suaraAktif) return;
+  if (!suaraAktif || !audioUnlocked) return;
 
-  try {
-    const duration = 0.1;
-    const now = audioContext.currentTime;
-
-    switch (type) {
-      case 'hover':
-        /* Suara feedback hover - nada tipis & cepat */
-        const oscHover = audioContext.createOscillator();
-        const gainHover = audioContext.createGain();
-        oscHover.connect(gainHover);
-        gainHover.connect(audioContext.destination);
-        oscHover.frequency.value = 1200;
-        gainHover.gain.setValueAtTime(0.05, now);
-        gainHover.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
-        oscHover.start(now);
-        oscHover.stop(now + 0.08);
-        break;
-
-      case 'click':
-        const osc1 = audioContext.createOscillator();
-        const gain1 = audioContext.createGain();
-        osc1.connect(gain1);
-        gain1.connect(audioContext.destination);
-        osc1.frequency.value = 800;
-        gain1.gain.setValueAtTime(0.1, now);
-        gain1.gain.exponentialRampToValueAtTime(0.01, now + duration);
-        osc1.start(now);
-        osc1.stop(now + duration);
-        break;
-
-      case 'success':
-        for (let i = 0; i < 2; i++) {
-          const osc = audioContext.createOscillator();
-          const gain = audioContext.createGain();
-          osc.connect(gain);
-          gain.connect(audioContext.destination);
-          osc.frequency.value = 600 + i * 200;
-          gain.gain.setValueAtTime(0.05, now + i * 0.1);
-          gain.gain.exponentialRampToValueAtTime(0.01, now + (i + 1) * 0.1);
-          osc.start(now + i * 0.1);
-          osc.stop(now + (i + 1) * 0.1);
-        }
-        break;
-
-      case 'error':
-        const oscErr = audioContext.createOscillator();
-        const gainErr = audioContext.createGain();
-        oscErr.connect(gainErr);
-        gainErr.connect(audioContext.destination);
-        oscErr.frequency.value = 300;
-        gainErr.gain.setValueAtTime(0.1, now);
-        gainErr.gain.exponentialRampToValueAtTime(0.01, now + duration);
-        oscErr.start(now);
-        oscErr.stop(now + duration);
-        break;
-    }
-  } catch (e) {
-    console.log('Sound not supported');
+  const sound = sounds[type];
+  if (sound) {
+    sound.currentTime = 0;
+    sound.play().catch(err => {
+      console.log('Audio gagal:', err);
+    });
   }
 }
+
 
 let fps = 0;
 let lastTime = Date.now();
@@ -361,18 +337,21 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   infoToggleBtn.addEventListener('click', () => {
-    showFPS = !showFPS;
-    if (showFPS) {
-      fpsCounter.classList.add('show');
-      if (statsPanel) statsPanel.classList.remove('hidden');
-      infoToggleBtn.classList.add('active');
-    } else {
-      fpsCounter.classList.remove('show');
-      if (statsPanel) statsPanel.classList.add('hidden');
-      infoToggleBtn.classList.remove('active');
-    }
-    putarSuara('click');
-  });
+  const modal = document.querySelector('#modal-info-model');
+  const titleEl = document.querySelector('#judul-modal');
+  const bodyEl = document.querySelector('#isi-modal');
+
+  if (titleEl) titleEl.textContent = "📄 Pamflet PMB (Detail)";
+  if (bodyEl) {
+    bodyEl.innerHTML = `
+      <img src="./pamflet.jpg" style="width:100%; border-radius:10px;" />
+    `;
+  }
+
+  if (modal) modal.classList.remove('hidden');
+
+  putarSuara('click');
+});
 
   soundToggleBtn.addEventListener('click', () => {
     suaraAktif = !suaraAktif;
@@ -586,73 +565,67 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  const targetEntities = document.querySelectorAll('[mindar-image-target]');
-  targetEntities.forEach((entity) => {
-    entity.addEventListener('targetFound', () => {
-      if (arActive && markerIndicator) {
-        markerIndicator.classList.remove('hidden');
-        putarSuara('click');
-        
-        const scannerGuide = document.querySelector('#scanner-guide');
-        if (scannerGuide) scannerGuide.classList.add('hidden');
-        
-        // Pop-in animation
-        const models = entity.querySelectorAll('.bisa-diklik');
-        models.forEach(model => {
-           const currentScale = model.getAttribute('scale') || {x: 1, y: 1, z: 1};
-           model.setAttribute('animation__popin', `property: scale; from: 0 0 0; to: ${currentScale.x} ${currentScale.y} ${currentScale.z}; dur: 1000; easing: easeOutElastic`);
-        });
-      }
-    });
+const targetEntities = document.querySelectorAll('[mindar-image-target]');
 
-    entity.addEventListener('targetLost', () => {
-      if (markerIndicator) {
-        markerIndicator.classList.add('hidden');
-      }
-      
+targetEntities.forEach((entity) => {
+  entity.addEventListener('targetFound', () => {
+    if (arActive && markerIndicator) {
+      markerIndicator.classList.remove('hidden');
+      putarSuara('click');
+
       const scannerGuide = document.querySelector('#scanner-guide');
-      if (scannerGuide) scannerGuide.classList.remove('hidden');
+      if (scannerGuide) scannerGuide.classList.add('hidden');
+
+      const pamflet = document.querySelector('#pamflet-info');
+      if (pamflet) pamflet.classList.remove('hidden');
+
       const models = entity.querySelectorAll('.bisa-diklik');
       models.forEach(model => {
-         model.removeAttribute('animation__popin');
+        const currentScale = model.getAttribute('scale') || {x:1,y:1,z:1};
+        model.setAttribute('animation__popin',
+          `property: scale; from: 0 0 0; to: ${currentScale.x} ${currentScale.y} ${currentScale.z}; dur: 1000; easing: easeOutElastic`);
       });
-    });
+    }
   });
+});
 
   let autoRotAngle = 0;
-  setInterval(() => {
-    if (rotasiOtomatisAktif && arActive) {
-      autoRotAngle += 1;
-      const models = document.querySelectorAll('.bisa-diklik');
-      models.forEach(model => {
-        model.setAttribute('rotation', `0 ${autoRotAngle} 0`);
-      });
-    }
-  }, 30);
 
-  sceneEl.addEventListener('loaded', () => {
-    console.log('A-Frame scene dimuat');
-    perbaruiStatus('✓ Siap untuk AR', false);
-  });
-
-  window.addEventListener('error', (event) => {
-    console.error('Error:', event.error);
-    perbaruiStatus('⚠️ Terjadi kesalahan', false);
-    putarSuara('error');
-  });
-
-  function animate() {
-    if (showFPS) {
-      perbaruiFPS();
-      perbaruiStatistik();
-    }
-    requestAnimationFrame(animate);
+setInterval(() => {
+  if (rotasiOtomatisAktif && arActive) {
+    autoRotAngle += 1;
+    const models = document.querySelectorAll('.bisa-diklik');
+    models.forEach(model => {
+      model.setAttribute('rotation', `0 ${autoRotAngle} 0`);
+    });
   }
-  animate();
+}, 30);
 
-  setInterval(() => {
-    if (arActive && showFPS) {
-      perbaruiStatistik();
-    }
-  }, 1000);
+sceneEl.addEventListener('loaded', () => {
+  console.log('A-Frame scene dimuat');
+  perbaruiStatus('✓ Siap untuk AR', false);
 });
+
+window.addEventListener('error', (event) => {
+  console.error('Error:', event.error);
+  perbaruiStatus('⚠️ Terjadi kesalahan', false);
+  putarSuara('error');
+});
+
+function animate() {
+  if (showFPS) {
+    perbaruiFPS();
+    perbaruiStatistik();
+  }
+  requestAnimationFrame(animate);
+}
+animate();
+
+setInterval(() => {
+  if (arActive && showFPS) {
+    perbaruiStatistik();
+  }
+}, 1000);
+
+});
+
