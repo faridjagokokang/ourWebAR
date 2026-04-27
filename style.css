@@ -58,8 +58,8 @@ body::after {
 /* Base Glass Panel */
 .glass-panel {
   background: var(--glass-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
   border-radius: 24px;
@@ -162,6 +162,7 @@ body::after {
   transform: translateX(-50%);
   display: flex;
   flex-direction: row;
+  overflow-x: auto;
   gap: 15px;
   padding: 15px 25px;
   z-index: 999;
@@ -378,7 +379,7 @@ body::after {
 
 .modal-content {
   background: var(--glass-bg);
-  backdrop-filter: blur(30px);
+  backdrop-filter: blur(10px);
   border: 1px solid var(--glass-border);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
   border-radius: 24px;
@@ -483,4 +484,110 @@ body::after {
 /* Remove button default styles */
 button {
   outline: none;
+}
+/* =========================
+   MOBILE PRODUCTION PATCH
+========================= */
+@media (max-width: 768px) {
+
+  /* HEADER */
+  #kepala {
+    top: 8px;
+    padding: 8px 14px;
+    border-radius: 20px;
+  }
+
+  #kepala h1 {
+    font-size: 13px;
+    letter-spacing: 0.5px;
+  }
+
+  /* START BUTTON */
+  #wadah-tombol {
+    top: auto;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .btn-glowing,
+  .btn-glowing-danger {
+    padding: 12px 20px;
+    font-size: 13px;
+    border-radius: 30px;
+    min-width: 160px;
+  }
+
+  /* BOTTOM CONTROL → SCROLLABLE DOCK */
+  #wadah-kontrol {
+    bottom: 0;
+    left: 0;
+    transform: none;
+    width: 100%;
+    overflow-x: auto;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 0;
+    justify-content: flex-start;
+  }
+
+  #wadah-kontrol::-webkit-scrollbar {
+    display: none;
+  }
+
+  .btn-sidebar {
+    min-width: 70px;
+    font-size: 10px;
+  }
+
+  .btn-sidebar .icon {
+    width: 38px;
+    height: 38px;
+    font-size: 16px;
+  }
+
+  /* STATUS */
+  #status-ar {
+    bottom: 60px;
+    left: 10px;
+    font-size: 10px;
+    padding: 6px 10px;
+  }
+
+  /* SCANNER */
+  .scanner-frame {
+    width: 85%;
+    height: 40%;
+  }
+
+  .scanner-text {
+    font-size: 12px;
+    padding: 8px 14px;
+  }
+
+  /* MODEL CONTROL */
+  #kontrol-model {
+    width: 150px;
+    bottom: 120px;
+    left: 10px;
+    padding: 10px;
+  }
+
+  .control-btn {
+    padding: 6px;
+    font-size: 12px;
+  }
+
+  /* MODAL */
+  .modal-content {
+    padding: 20px;
+    max-width: 90%;
+    border-radius: 16px;
+  }
+
+  /* FOOTER */
+  #kaki-halaman {
+    font-size: 8px;
+    bottom: 2px;
+  }
 }
