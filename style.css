@@ -28,6 +28,15 @@ body {
   min-height: 100vh;
 }
 
+body.ar-active {
+  background: transparent !important;
+}
+
+body.ar-active::before,
+body.ar-active::after {
+  display: none !important;
+}
+
 /* Floating Orbs Background */
 body::before,
 body::after {
@@ -251,7 +260,9 @@ body::after {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.3);
+  border: 3px dashed rgba(255, 255, 255, 0.7);
+  border-radius: 30px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
 }
 
 #pamflet-info {
@@ -484,6 +495,88 @@ body::after {
 /* Remove button default styles */
 button {
   outline: none;
+}
+
+/* Styling class yang ada di HTML */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: 20px;
+}
+
+.panel-kontrol p {
+  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.tombol-kontrol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.pulse-dot {
+  width: 12px;
+  height: 12px;
+  background-color: #10b981;
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+#indikator-marker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 15px;
+  font-size: 12px;
+  color: #10b981;
+  justify-content: center;
+}
+
+.settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.settings-group label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.settings-group input[type="range"] {
+  width: 100px;
+}
+
+.help-content h3, .about-content h3 {
+  margin-top: 15px;
+  margin-bottom: 5px;
+  font-size: 16px;
+  color: var(--secondary);
+}
+
+.help-content ol, .help-content ul, .about-content ul {
+  padding-left: 20px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.about-content p {
+  font-size: 14px;
+  line-height: 1.6;
 }
 /* =========================
    MOBILE PRODUCTION PATCH

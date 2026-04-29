@@ -1,116 +1,85 @@
-const terjemahan = {
-  id: {
-    nabi: { title: '👤 NABI', desc: 'Model interaktif figur bersejarah yang memainkan peran penting dalam sejarah.' },
-    maryam: { title: '👩 MARYAM', desc: 'Model interaktif figur bersejarah yang dikenal dalam tradisi keagamaan.' },
-  },
-  en: {
-    nabi: { title: '👤 PROPHET', desc: 'Interactive 3D model of a historical figure who played an important role in history.' },
-    maryam: { title: '👩 MARYAM', desc: 'Interactive 3D model of a historical figure known in religious tradition.' },
-  },
-  ar: {
-    nabi: { title: '👤 النبي', desc: 'نموذج تفاعلي ثلاثي الأبعاد لشخصية تاريخية لعبت دوراً مهماً في التاريخ.' },
-    maryam: { title: '👩 مريم', desc: 'نموذج تفاعلي ثلاثي الأبعاد لشخصية تاريخية معروفة في التقليد الديني.' },
+const DEFAULT_SCALE = { x: 1.2, y: 1.2, z: 1.2 };
+
+function getScale(el, defaultScale = DEFAULT_SCALE) {
+  let scale = el.getAttribute('scale');
+
+  if (!scale) return { ...defaultScale };
+
+  if (typeof scale === 'string') {
+    const parts = scale.split(' ').map(Number);
+    return {
+      x: parts[0] || defaultScale.x,
+      y: parts[1] || defaultScale.y,
+      z: parts[2] || defaultScale.z
+    };
   }
-};
 
-let bahasaSaatIni = localStorage.getItem('wabAR_language') || 'id';
-
-AFRAME.registerComponent('interaksi-objek', {
-  init: function () {
-    const el = this.el;
-    const panel = el.parentNode.querySelector('.panel-info');
-    let muncul = false;
-
-    el.addEventListener('mouseenter', () => {
-      el.classList.add('hover-state');
-      putarSuara('hover');
-      
-      const currentScale = el.getAttribute('scale') || {x: 1.2, y: 1.2, z: 1.2};
-      el.setAttribute('animation__hover_scale', `property: scale; to: ${currentScale.x * 1.05} ${currentScale.y * 1.05} ${currentScale.z * 1.05}; dur: 300; easing: easeOutQuad`);
-    });
-
-    el.addEventListener('mouseleave', () => {
-      el.classList.remove('hover-state');
-      
-      const currentScale = el.getAttribute('scale') || {x: 1.2, y: 1.2, z: 1.2};
-      // Revert hover scale by removing it so it falls back to its normal scale attribute or we animate back
-      // Since scale might have been changed by controls, we animate back to currentScale / 1.05
-      el.setAttribute('animation__hover_scale', `property: scale; to: ${currentScale.x / 1.05} ${currentScale.y / 1.05} ${currentScale.z / 1.05}; dur: 300; easing: easeOutQuad`);
-    });
-
-    el.addEventListener('click', () => {
-      const currentScale = el.getAttribute('scale') || {x: 1.2, y: 1.2, z: 1.2};
-      el.setAttribute('animation__click_scale', `property: scale; to: ${currentScale.x * 1.2} ${currentScale.y * 1.2} ${currentScale.z * 1.2}; dur: 200; easing: easeOutQuad; dir: alternate; loop: 1`);
-
-      muncul = !muncul;
-      if(panel) {
-        panel.setAttribute('visible', muncul);
-        if(muncul) {
-          panel.setAttribute('animation__appear', 'property: scale; from: 0.1 0.1 0.1; to: 1 1 1; dur: 500; easing: easeOutElastic');
-        } else {
-          panel.removeAttribute('animation__appear');
-        }
-      }
-      putarSuara('click');
-      perbaruiStatistik('interaction');
-
-      const modelIndex = el.parentNode.getAttribute('mindar-image-target') ?
-        el.parentNode.getAttribute('mindar-image-target').split(':')[1].trim() : 0;
-      tampilkanInfoModel(modelIndex);
-    });
-  }
-});
+  return scale;
+}
 
 AFRAME.registerComponent('interaksi-brosur', {
   init: function () {
     const el = this.el;
     el.diputar = false;
 
+    // 🔥 ambil base scale SEKALI (ini kunci biar ga drift)
+    const baseScale = getScale(el, DEFAULT_SCALE);
+
     el.addEventListener('mouseenter', () => {
       el.classList.add('hover-state');
       if (typeof putarSuara === 'function') putarSuara('hover');
-      
-      const currentScale = el.getAttribute('scale') || {x: 1, y: 1, z: 1};
-      el.setAttribute('animation__hover_scale', `property: scale; to: ${currentScale.x * 1.05} ${currentScale.y * 1.05} ${currentScale.z * 1.05}; dur: 300; easing: easeOutQuad`);
+
+      el.removeAttribute('animation__hover_scale');
+      el.setAttribute('animation__hover_scale',
+        `property: scale; to: ${baseScale.x * 1.05} ${baseScale.y * 1.05} ${baseScale.z * 1.05}; dur: 300; easing: easeOutQuad`);
     });
 
     el.addEventListener('mouseleave', () => {
       el.classList.remove('hover-state');
-      const currentScale = el.getAttribute('scale') || {x: 1, y: 1, z: 1};
-      el.setAttribute('animation__hover_scale', `property: scale; to: ${currentScale.x / 1.05} ${currentScale.y / 1.05} ${currentScale.z / 1.05}; dur: 300; easing: easeOutQuad`);
+
+      el.removeAttribute('animation__hover_scale');
+      el.setAttribute('animation__hover_scale',
+        `property: scale; to: ${baseScale.x} ${baseScale.y} ${baseScale.z}; dur: 300; easing: easeOutQuad`);
     });
 
-    el.addEventListener('click', () => {
+    let lastTap = 0;
+
+    function toggleRotate() {
+      const now = Date.now();
+
+      // cegah double trigger (touch + click)
+      if (now - lastTap < 300) return;
+      lastTap = now;
+
       el.diputar = !el.diputar;
       const targetRot = el.diputar ? "0 180 0" : "0 0 0";
 
-      // Hapus animasi sebelumnya lalu set animasi baru untuk rotasi 180 derajat
       el.removeAttribute('animation__rot');
-      el.setAttribute('animation__rot', `property: rotation; to: ${targetRot}; dur: 1000; easing: easeInOutElastic`);
-      
-      const currentScale = el.getAttribute('scale') || {x: 1, y: 1, z: 1};
-      el.setAttribute('animation__click_scale', `property: scale; to: ${currentScale.x * 1.2} ${currentScale.y * 1.2} ${currentScale.z * 1.2}; dur: 500; easing: easeOutQuad; dir: alternate; loop: 1`);
+      el.setAttribute('animation__rot',
+        `property: rotation; to: ${targetRot}; dur: 1000; easing: easeInOutElastic`);
 
       if (typeof putarSuara === 'function') putarSuara('click');
-      if (typeof perbaruiStatistik === 'function') perbaruiStatistik('interaction');
-    });
+    }
+
+    el.addEventListener('click', toggleRotate);
+    el.addEventListener('touchstart', toggleRotate);
   }
 });
 
-function tampilkanInfoModel(modelIndex) {
-  const models = ['nabi', 'maryam'];
-  const model = models[modelIndex] || 'nabi';
-  const info = terjemahan[bahasaSaatIni][model];
-
+function tampilkanInfoModel() {
   const titleEl = document.querySelector('#judul-modal');
   const bodyEl = document.querySelector('#isi-modal');
   const modalEl = document.querySelector('#modal-info-model');
 
-  if (titleEl) titleEl.textContent = info.title;
-  if (bodyEl) bodyEl.innerHTML = `<p>${info.desc}</p>`;
+  if (titleEl) titleEl.textContent = "📄 Pamflet PMB";
+  if (bodyEl) {
+    bodyEl.innerHTML = `
+      <p>Brosur interaktif Penerimaan Mahasiswa Baru.</p>
+    `;
+  }
+
   if (modalEl) modalEl.classList.remove('hidden');
 }
-
 let suaraAktif = localStorage.getItem('wabAR_sound') !== 'false';
 
 const sounds = {
@@ -131,7 +100,7 @@ function unlockAudio() {
     sound.play().then(() => {
       sound.pause();
       sound.currentTime = 0;
-    }).catch(() => {});
+    }).catch(() => { });
   });
 
   audioUnlocked = true;
@@ -153,49 +122,13 @@ function putarSuara(type) {
   }
 }
 
-
-let fps = 0;
-let lastTime = Date.now();
-let frameCount = 0;
-let showFPS = false;
-
-function perbaruiFPS() {
-  frameCount++;
-  const currentTime = Date.now();
-  const elapsed = currentTime - lastTime;
-
-  if (elapsed >= 1000) {
-    fps = Math.round(frameCount * 1000 / elapsed);
-    const fpsEl = document.querySelector('#penghitung-fps');
-    if (fpsEl) {
-      fpsEl.textContent = `FPS: ${fps}`;
-    }
-    frameCount = 0;
-    lastTime = currentTime;
-  }
-}
-
-let waktuMulaiTampilan = Date.now();
-let jumlahInteraksi = 0;
-
-function perbaruiStatistik(type) {
-  if (type === 'interaction') {
-    jumlahInteraksi++;
-    const el = document.querySelector('#hitung-interaksi');
-    if (el) el.textContent = jumlahInteraksi;
-  }
-
-  const elapsedSeconds = Math.floor((Date.now() - waktuMulaiTampilan) / 1000);
-  const el2 = document.querySelector('#waktu-tampilan');
-  if (el2) el2.textContent = elapsedSeconds + 's';
-}
+let waktuMulaiTampilan = 0;
 
 document.addEventListener('DOMContentLoaded', () => {
   const sceneEl = document.querySelector('a-scene');
   const startBtn = document.querySelector('#tombol-mulai');
   const stopBtn = document.querySelector('#tombol-henti');
   const statusEl = document.querySelector('#status-ar');
-  const instructionsEl = document.querySelector('#instruksi');
   const loadingOverlay = document.querySelector('#lapisan-muat');
   const fullscreenBtn = document.querySelector('#tombol-layar-penuh');
   const infoToggleBtn = document.querySelector('#tombol-info');
@@ -206,9 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const helpBtn = document.querySelector('#tombol-bantuan');
   const aboutBtn = document.querySelector('#tombol-tentang');
   const modelControlsDiv = document.querySelector('#kontrol-model');
-  const fpsCounter = document.querySelector('#penghitung-fps');
   const markerIndicator = document.querySelector('#indikator-marker');
-  const statsPanel = document.querySelector('#panel-statistik');
 
   const darkModeEnabled = localStorage.getItem('wabAR_darkMode') === 'true';
   if (darkModeEnabled) {
@@ -218,7 +149,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let arActive = false;
   let rotasiOtomatisAktif = false;
-  let modelSaatIni = null;
   let touchStartX = 0;
   let touchStartY = 0;
   let lastTouchTime = 0;
@@ -241,13 +171,10 @@ document.addEventListener('DOMContentLoaded', () => {
     stopBtn.classList.remove('hidden');
     perbaruiStatus('Memulai AR...', false);
     tampilkanLoading(true);
-    
-    // Show scanner guide, scan problem btn
-    const scannerGuide = document.querySelector('#scanner-guide');
-    const scanProblemBtn = document.querySelector('#scan-problem-btn');
 
     try {
       setTimeout(() => {
+        document.body.classList.add('ar-active');
         sceneEl.systems['mindar-image-system'].start();
         tampilkanLoading(false);
         arActive = true;
@@ -256,9 +183,8 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
           startBtn.style.display = 'none';
           perbaruiStatus('✓ AR Aktif - Arahkan ke marker', true);
-          instructionsEl.classList.add('hidden');
           modelControlsDiv.classList.remove('hidden');
-          
+
           const scannerGuide = document.querySelector('#scanner-guide');
           const scanProblemBtn = document.querySelector('#scan-problem-btn');
           if (scannerGuide) scannerGuide.classList.remove('hidden');
@@ -278,11 +204,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   stopBtn.addEventListener('click', () => {
     arActive = false;
+    document.body.classList.remove('ar-active');
     stopBtn.classList.add('hidden');
     startBtn.style.display = 'block';
     startBtn.disabled = false;
     modelControlsDiv.classList.add('hidden');
-    
+
     const scannerGuide = document.querySelector('#scanner-guide');
     const scanProblemBtn = document.querySelector('#scan-problem-btn');
     if (scannerGuide) scannerGuide.classList.add('hidden');
@@ -297,7 +224,6 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => {
         tampilkanLoading(false);
         perbaruiStatus('✓ Siap untuk AR', false);
-        instructionsEl.classList.remove('hidden');
         putarSuara('click');
       }, 1000);
     } catch (error) {
@@ -337,21 +263,21 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   infoToggleBtn.addEventListener('click', () => {
-  const modal = document.querySelector('#modal-info-model');
-  const titleEl = document.querySelector('#judul-modal');
-  const bodyEl = document.querySelector('#isi-modal');
+    const modal = document.querySelector('#modal-info-model');
+    const titleEl = document.querySelector('#judul-modal');
+    const bodyEl = document.querySelector('#isi-modal');
 
-  if (titleEl) titleEl.textContent = "📄 Pamflet PMB (Detail)";
-  if (bodyEl) {
-    bodyEl.innerHTML = `
+    if (titleEl) titleEl.textContent = "📄 Pamflet PMB (Detail)";
+    if (bodyEl) {
+      bodyEl.innerHTML = `
       <img src="./pamflet.jpg" style="width:100%; border-radius:10px;" />
     `;
-  }
+    }
 
-  if (modal) modal.classList.remove('hidden');
+    if (modal) modal.classList.remove('hidden');
 
-  putarSuara('click');
-});
+    putarSuara('click');
+  });
 
   soundToggleBtn.addEventListener('click', () => {
     suaraAktif = !suaraAktif;
@@ -418,20 +344,6 @@ document.addEventListener('DOMContentLoaded', () => {
         putarSuara('click');
       }
     });
-  });
-
-  document.querySelectorAll('.tombol-bahasa').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.tombol-bahasa').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      bahasaSaatIni = btn.getAttribute('data-lang');
-      localStorage.setItem('wabAR_language', bahasaSaatIni);
-      putarSuara('click');
-    });
-
-    if (btn.getAttribute('data-lang') === bahasaSaatIni) {
-      btn.classList.add('active');
-    }
   });
 
   const inputKecepatanAnimasi = document.querySelector('#kecepatan-animasi');
@@ -521,11 +433,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function perbesarModel(factor) {
     const models = document.querySelectorAll('.bisa-diklik');
     models.forEach(model => {
-      let currentScale = model.getAttribute('scale') || {x: 1, y: 1, z: 1};
+      let currentScale = getScale(model, { x: 1, y: 1, z: 1 });
       // Parse scale if it's a string instead of object
       if (typeof currentScale === 'string') {
         const parts = currentScale.split(' ').map(parseFloat);
-        currentScale = {x: parts[0], y: parts[1], z: parts[2]};
+        currentScale = { x: parts[0], y: parts[1], z: parts[2] };
       }
       model.setAttribute('scale', `${currentScale.x * factor} ${currentScale.y * factor} ${currentScale.z * factor}`);
     });
@@ -549,6 +461,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   document.addEventListener('touchstart', (e) => {
+    isDragging = false;
+
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
     const currentTime = Date.now();
@@ -561,6 +475,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.addEventListener('touchmove', (e) => {
+    isDragging = true;
+
     if (!arActive || rotasiOtomatisAktif) return;
 
     const touchEndX = e.touches[0].clientX;
@@ -576,69 +492,60 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-const targetEntities = document.querySelectorAll('[mindar-image-target]');
+  const targetEntities = document.querySelectorAll('[mindar-image-target]');
 
-targetEntities.forEach((entity) => {
-  entity.addEventListener('targetFound', () => {
-    if (arActive && markerIndicator) {
-      markerIndicator.classList.remove('hidden');
-      putarSuara('click');
+  targetEntities.forEach((entity) => {
+    entity.addEventListener('targetFound', () => {
+      if (arActive) {
+        perbaruiStatus('✅ Marker Terdeteksi!', true);
+        if (markerIndicator) markerIndicator.classList.remove('hidden');
+        putarSuara('success');
 
-      const scannerGuide = document.querySelector('#scanner-guide');
-      if (scannerGuide) scannerGuide.classList.add('hidden');
+        const scannerGuide = document.querySelector('#scanner-guide');
+        if (scannerGuide) scannerGuide.classList.add('hidden');
 
-      const pamflet = document.querySelector('#pamflet-info');
-      if (pamflet) pamflet.classList.remove('hidden');
+        const models = entity.querySelectorAll('.bisa-diklik');
+        models.forEach(model => {
+          model.setAttribute('visible', 'true');
+          const currentScale = getScale(model, { x: 1, y: 1, z: 1 });
+          model.setAttribute('scale', `${currentScale.x} ${currentScale.y} ${currentScale.z}`);
+        });
+      }
+    });
 
-      const models = entity.querySelectorAll('.bisa-diklik');
-      models.forEach(model => {
-        const currentScale = model.getAttribute('scale') || {x:1,y:1,z:1};
-        model.setAttribute('animation__popin',
-          `property: scale; from: 0 0 0; to: ${currentScale.x} ${currentScale.y} ${currentScale.z}; dur: 1000; easing: easeOutElastic`);
-      });
-    }
+    entity.addEventListener('targetLost', () => {
+      if (arActive) {
+        perbaruiStatus('🔍 Mencari Marker...', false);
+        if (markerIndicator) markerIndicator.classList.add('hidden');
+
+        const scannerGuide = document.querySelector('#scanner-guide');
+        if (scannerGuide) scannerGuide.classList.remove('hidden');
+      }
+    });
   });
-});
 
   let autoRotAngle = 0;
 
-setInterval(() => {
-  if (rotasiOtomatisAktif && arActive) {
-    autoRotAngle += 1;
-    const models = document.querySelectorAll('.bisa-diklik');
-    models.forEach(model => {
-      if (!model.hasAttribute('interaksi-brosur')) {
-        model.setAttribute('rotation', `0 ${autoRotAngle} 0`);
-      }
-    });
-  }
-}, 30);
+  setInterval(() => {
+    if (rotasiOtomatisAktif && arActive) {
+      autoRotAngle += 1;
+      const models = document.querySelectorAll('.bisa-diklik');
+      models.forEach(model => {
+        if (!model.hasAttribute('interaksi-brosur')) {
+          model.setAttribute('rotation', `0 ${autoRotAngle} 0`);
+        }
+      });
+    }
+  }, 30);
 
-sceneEl.addEventListener('loaded', () => {
-  console.log('A-Frame scene dimuat');
-  perbaruiStatus('✓ Siap untuk AR', false);
+  sceneEl.addEventListener('loaded', () => {
+    console.log('A-Frame scene dimuat');
+    perbaruiStatus('✓ Siap untuk AR', false);
+  });
+
+  window.addEventListener('error', (event) => {
+    console.error('Error:', event.error);
+    perbaruiStatus('⚠️ Terjadi kesalahan', false);
+    putarSuara('error');
+  });
 });
-
-window.addEventListener('error', (event) => {
-  console.error('Error:', event.error);
-  perbaruiStatus('⚠️ Terjadi kesalahan', false);
-  putarSuara('error');
-});
-
-function animate() {
-  if (showFPS) {
-    perbaruiFPS();
-    perbaruiStatistik();
-  }
-  requestAnimationFrame(animate);
-}
-animate();
-
-setInterval(() => {
-  if (arActive && showFPS) {
-    perbaruiStatistik();
-  }
-}, 1000);
-
-});
-
