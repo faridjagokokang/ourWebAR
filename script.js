@@ -22,7 +22,6 @@ AFRAME.registerComponent('interaksi-brosur', {
     const el = this.el;
     el.diputar = false;
 
-    // 🔥 ambil base scale SEKALI (ini kunci biar ga drift)
     const baseScale = getScale(el, DEFAULT_SCALE);
 
     el.addEventListener('mouseenter', () => {
@@ -44,10 +43,13 @@ AFRAME.registerComponent('interaksi-brosur', {
 
     let lastTap = 0;
 
-    function toggleRotate() {
-      const now = Date.now();
+    function toggleRotate(e) {
+      if (e) {
 
-      // cegah double trigger (touch + click)
+        if (typeof e.stopPropagation === 'function') e.stopPropagation();
+      }
+
+      const now = Date.now();
       if (now - lastTap < 300) return;
       lastTap = now;
 
@@ -55,13 +57,16 @@ AFRAME.registerComponent('interaksi-brosur', {
       const targetRot = el.diputar ? "0 180 0" : "0 0 0";
 
       el.removeAttribute('animation__rot');
-      el.setAttribute('animation__rot',
-        `property: rotation; to: ${targetRot}; dur: 1000; easing: easeInOutElastic`);
+      setTimeout(() => {
+        el.setAttribute('animation__rot',
+          `property: rotation; to: ${targetRot}; dur: 1000; easing: easeInOutElastic`);
+      }, 20);
 
       if (typeof putarSuara === 'function') putarSuara('click');
     }
 
     el.addEventListener('click', toggleRotate);
+    el.addEventListener('mousedown', toggleRotate); // 
     el.addEventListener('touchstart', toggleRotate);
   }
 });
@@ -89,7 +94,6 @@ const sounds = {
   error: new Audio('./error.ogg')
 };
 
-// 🔥 WAJIB: preload + unlock audio setelah user interaction pertama
 let audioUnlocked = false;
 
 function unlockAudio() {
@@ -106,7 +110,6 @@ function unlockAudio() {
   audioUnlocked = true;
 }
 
-// trigger sekali saat user pertama klik layar
 document.addEventListener('click', unlockAudio, { once: true });
 document.addEventListener('touchstart', unlockAudio, { once: true });
 
@@ -434,7 +437,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const models = document.querySelectorAll('.bisa-diklik');
     models.forEach(model => {
       let currentScale = getScale(model, { x: 1, y: 1, z: 1 });
-      // Parse scale if it's a string instead of object
       if (typeof currentScale === 'string') {
         const parts = currentScale.split(' ').map(parseFloat);
         currentScale = { x: parts[0], y: parts[1], z: parts[2] };
@@ -448,16 +450,23 @@ document.addEventListener('DOMContentLoaded', () => {
     modelScale = { x: 1.2, y: 1.2, z: 1.2 };
     const models = document.querySelectorAll('.bisa-diklik');
     models.forEach(model => {
+      model.setAttribute('rotation', '0 0 0');
+      
+      const baseScale = model.getAttribute('data-base-scale') || '1.2 1.2 1.2';
+      model.setAttribute('scale', baseScale);
+      
       if (model.hasAttribute('interaksi-brosur')) {
-        model.setAttribute('rotation', '0 0 0');
-        model.setAttribute('scale', '1 1 1');
         model.removeAttribute('animation__rot');
         model.diputar = false;
-      } else {
-        model.setAttribute('rotation', '0 0 0');
-        model.setAttribute('scale', '1.2 1.2 1.2');
       }
     });
+
+    const brosurInner = document.querySelector('#brosur');
+    if (brosurInner) {
+      brosurInner.setAttribute('rotation', '0 0 0');
+      brosurInner.removeAttribute('animation__rot');
+      brosurInner.diputar = false;
+    }
   }
 
   document.addEventListener('touchstart', (e) => {
@@ -524,15 +533,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  let autoRotAngle = 0;
-
   setInterval(() => {
     if (rotasiOtomatisAktif && arActive) {
-      autoRotAngle += 1;
+      modelRotation += 1;
       const models = document.querySelectorAll('.bisa-diklik');
       models.forEach(model => {
         if (!model.hasAttribute('interaksi-brosur')) {
-          model.setAttribute('rotation', `0 ${autoRotAngle} 0`);
+          model.setAttribute('rotation', `0 ${modelRotation} 0`);
         }
       });
     }

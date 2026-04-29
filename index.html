@@ -105,34 +105,38 @@
       <img id="gambar-brosur-belakang" src="./pamflet-belakang.jpg">
     </a-assets>
 
-    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+    <a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse;" raycaster="far: 10000; objects: .bisa-diklik"></a-camera>
     
-    <!-- Raycaster untuk mendeteksi klik/sentuhan pada objek 3D -->
-    <a-entity cursor="rayOrigin: mouse;" raycaster="objects: .bisa-diklik"></a-entity>
+
 
     <a-entity mindar-image-target="targetIndex: 0">
       <a-light type="directional" position="0 1 1" intensity="1.2" color="#fff"></a-light>
       <a-light type="ambient" intensity="0.8" color="#fff"></a-light>
 
-      <a-entity id="brosur"
+      <!-- Wrapper untuk dikontrol oleh UI (putar, perbesar) -->
+      <a-entity id="brosur-wrapper"
         class="bisa-diklik"
-        interaksi-brosur
         position="0 0 0.1"
         scale="2 2 2"
-        visible="false">
+        visible="false"
+        data-base-scale="2 2 2">
         
+        <!-- Brosur yang bisa di-klik untuk diputar (interaksi-brosur) -->
+        <a-entity id="brosur" interaksi-brosur>
           <!-- DEPAN -->
-        <a-image src="#gambar-brosur-depan" position="0 0 0.005" width="1" height="1.4" material="side: front">
-        </a-image>
+          <a-image src="#gambar-brosur-depan" position="0 0 0.005" width="1" height="1.4" material="side: front">
+          </a-image>
 
-        <!-- BELAKANG -->
-        <a-image src="#gambar-brosur-belakang" position="0 0 -0.005" rotation="0 180 0" width="1" height="1.4"
-          material="side: front">
-        </a-image>
+          <!-- BELAKANG -->
+          <a-image src="#gambar-brosur-belakang" position="0 0 -0.005" rotation="0 180 0" width="1" height="1.4"
+            material="side: front">
+          </a-image>
 
-        <a-box width="1.2" height="1.6" depth="0.05"
-              material="opacity: 0; transparent: true">
-        </a-box>
+          <!-- Kotak transparan khusus untuk area klik -->
+          <a-box width="1.2" height="1.6" depth="0.05"
+                material="opacity: 0; transparent: true">
+          </a-box>
+        </a-entity>
       </a-entity>
     </a-entity>
   </a-scene>
