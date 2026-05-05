@@ -67,17 +67,16 @@ AFRAME.registerComponent('ar-nav-button', {
   init: function () {
     const el = this.el;
 
-    el.setAttribute('sound__click', 'src: url(./click.ogg); on: click; poolSize: 2; volume: 3');
-    el.setAttribute('sound__hover', 'src: url(./hover.ogg); on: mouseenter; poolSize: 2; volume: 1');
-
     el.addEventListener('mouseenter', () => {
       el.setAttribute('material', 'color: #32d74b');
+      if (typeof putarSuara === 'function') putarSuara('hover');
     });
     el.addEventListener('mouseleave', () => {
       el.setAttribute('material', 'color: #0a84ff');
     });
     el.addEventListener('click', (e) => {
       if (e) e.stopPropagation();
+      if (typeof putarSuara === 'function') putarSuara('click');
       window.dispatchEvent(new CustomEvent('ar-page-change', { detail: { dir: this.data } }));
     });
   }
@@ -114,36 +113,63 @@ AFRAME.registerComponent('cyber-particles', {
 
 let suaraAktif = localStorage.getItem('wabAR_sound') !== 'false';
 
-const sounds = {
-  hover: new Audio('./hover.ogg'),
-  click: new Audio('./click.ogg'),
-  success: new Audio('./success.ogg'),
-  error: new Audio('./error.ogg')
-};
-
-let audioUnlocked = false;
+// Sistem Audio Synthesizer Tanpa File Eksternal (Web Audio API)
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function unlockAudio() {
-  if (audioUnlocked) return;
-  Object.values(sounds).forEach(sound => {
-    sound.volume = 1;
-    sound.play().then(() => {
-      sound.pause();
-      sound.currentTime = 0;
-    }).catch(() => { });
-  });
-  audioUnlocked = true;
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
 }
 
 document.addEventListener('click', unlockAudio, { once: true });
 document.addEventListener('touchstart', unlockAudio, { once: true });
 
 function putarSuara(type) {
-  if (!suaraAktif || !audioUnlocked) return;
-  const sound = sounds[type];
-  if (sound) {
-    sound.currentTime = 0;
-    sound.play().catch(err => console.log('Audio gagal:', err));
+  if (!suaraAktif) return;
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  const now = audioCtx.currentTime;
+
+  if (type === 'hover') {
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(400, now);
+    osc.frequency.exponentialRampToValueAtTime(600, now + 0.1);
+    gain.gain.setValueAtTime(0.05, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+    osc.start(now);
+    osc.stop(now + 0.1);
+  } else if (type === 'click') {
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(800, now);
+    osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+    gain.gain.setValueAtTime(0.1, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+    osc.start(now);
+    osc.stop(now + 0.1);
+  } else if (type === 'success') {
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(500, now);
+    osc.frequency.setValueAtTime(700, now + 0.1);
+    osc.frequency.setValueAtTime(1000, now + 0.2);
+    gain.gain.setValueAtTime(0.1, now);
+    gain.gain.linearRampToValueAtTime(0, now + 0.4);
+    osc.start(now);
+    osc.stop(now + 0.4);
+  } else if (type === 'error') {
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(300, now);
+    osc.frequency.linearRampToValueAtTime(100, now + 0.3);
+    gain.gain.setValueAtTime(0.1, now);
+    gain.gain.linearRampToValueAtTime(0, now + 0.3);
+    osc.start(now);
+    osc.stop(now + 0.3);
   }
 }
 
@@ -251,6 +277,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 1500);
   });
 
+  const targetImage = document.querySelector('a-entity[mindar-image-target]');
+  const indikatorMarker = document.querySelector('#indikator-marker');
+
+  if (targetImage) {
+    targetImage.addEventListener('targetFound', () => {
+      if (indikatorMarker) indikatorMarker.classList.remove('hidden');
+      if (typeof putarSuara === 'function') putarSuara('success');
+      
+      // Pastikan model terlihat lagi setelah di-hide saat stop
+      const models = document.querySelectorAll('.bisa-diklik');
+      models.forEach(model => {
+        model.setAttribute('visible', 'true');
+      });
+      // halaman-info-3d diatur oleh updateARPage(), jadi biarkan saja
+    });
+
+    targetImage.addEventListener('targetLost', () => {
+      if (indikatorMarker) indikatorMarker.classList.add('hidden');
+    });
+  }
+
   stopBtn.addEventListener('click', () => {
     arActive = false;
     document.body.classList.remove('ar-active');
@@ -273,6 +320,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       sceneEl.systems['mindar-image-system'].stop();
+      
+      // Sembunyikan elemen 3D agar tidak "nyangkut" di layar
+      const models = document.querySelectorAll('.bisa-diklik, #halaman-info-3d');
+      models.forEach(model => {
+        model.setAttribute('visible', 'false');
+      });
+
       setTimeout(() => {
         tampilkanLoading(false);
         perbaruiStatus('Siap untuk AR', false);
@@ -311,6 +365,15 @@ document.addEventListener('DOMContentLoaded', () => {
     settingsToggleBtn.addEventListener('click', () => {
       document.querySelector('#modal-pengaturan').classList.remove('hidden');
       putarSuara('click');
+    });
+  }
+
+  const timToggleBtn = document.querySelector('#tombol-tim');
+  if (timToggleBtn) {
+    timToggleBtn.addEventListener('click', () => {
+      const modalTim = document.querySelector('#modal-tim');
+      if (modalTim) modalTim.classList.remove('hidden');
+      if (typeof putarSuara === 'function') putarSuara('click');
     });
   }
 
@@ -682,9 +745,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if(btnUlangiKuis) {
     btnUlangiKuis.addEventListener('click', () => {
       resetQuiz();
-      screenResult.classList.add('hidden');
-      screenQuestion.classList.remove('hidden');
-      renderPertanyaan();
       if (typeof putarSuara === 'function') putarSuara('click');
     });
   }

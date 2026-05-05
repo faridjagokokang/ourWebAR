@@ -225,11 +225,38 @@ body.ar-active {
 }
 
 /* Tombol CTA di pojok kanan atas layar saat AR Aktif */
-#tombol-daftar {
+#wadah-tombol-atas {
   position: fixed;
   top: 32px;
   right: 24px;
-  z-index: 1000;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  pointer-events: auto;
+}
+
+#tombol-daftar {
+  margin-right: 12px;
+}
+
+.btn-glowing-info {
+  background: #0a84ff;
+  color: #fff;
+  border-radius: 100px;
+  padding: 14px 20px;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s;
+  border: none;
+  box-shadow: 0 0 20px rgba(10, 132, 255, 0.4);
+  display: inline-block;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.btn-glowing-info:active {
+  transform: scale(0.95);
 }
 
 /* Bottom Navigation Dock (Like iPhone Control Center) */
@@ -545,6 +572,137 @@ body.ar-active {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.6);
   font-family: monospace;
+}
+
+/* Modal Kuis Interaktif */
+.quiz-modal {
+  max-width: 500px;
+  text-align: center;
+}
+
+.quiz-screen {
+  animation: fadeIn 0.4s ease-out;
+}
+
+.quiz-modal h2 {
+  font-size: 24px;
+  margin-bottom: 16px;
+  color: #fff;
+}
+
+.quiz-modal p {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+.btn-quiz-primary {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.2s;
+  box-shadow: 0 4px 15px rgba(10, 132, 255, 0.3);
+}
+
+.btn-quiz-primary:hover {
+  background: #0070e0;
+  transform: translateY(-2px);
+}
+
+.btn-quiz-secondary {
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.2s;
+  margin-top: 12px;
+}
+
+.btn-quiz-secondary:hover {
+  background: rgba(10, 132, 255, 0.1);
+}
+
+.quiz-progress {
+  font-family: monospace;
+  color: var(--primary);
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+#q-text {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  line-height: 1.4;
+}
+
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.btn-quiz-option {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  padding: 16px;
+  border-radius: 12px;
+  text-align: left;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-quiz-option:hover {
+  background: rgba(10, 132, 255, 0.1);
+  border-color: var(--primary);
+  transform: translateX(5px);
+}
+
+.result-card {
+  background: rgba(50, 215, 75, 0.1);
+  border: 1px solid rgba(50, 215, 75, 0.3);
+  border-radius: 16px;
+  padding: 30px 20px;
+  margin-bottom: 24px;
+  animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#res-faculty {
+  color: #32d74b;
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+#res-desc {
+  color: #fff;
+  margin: 0;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes popIn {
+  0% { transform: scale(0.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 /* Modals */
