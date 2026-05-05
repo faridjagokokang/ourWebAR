@@ -9,7 +9,7 @@
 }
 
 :root {
-  --primary: #0a84ff; /* Apple iOS Blue */
+  --primary: #0a84ff;
   --bg-base: #000000;
   --glass-bg: rgba(28, 28, 30, 0.75);
   --glass-border: rgba(255, 255, 255, 0.1);
@@ -35,7 +35,6 @@ body.ar-active {
   background: transparent !important;
 }
 
-/* Glass Panel Utilities */
 .glass-panel {
   background: var(--glass-bg);
   backdrop-filter: blur(20px);
@@ -52,7 +51,6 @@ body.ar-active {
   border-radius: 16px;
 }
 
-/* Loading Overlay */
 #lapisan-muat {
   position: fixed;
   top: 0;
@@ -74,21 +72,59 @@ body.ar-active {
   pointer-events: none;
 }
 
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgba(255, 255, 255, 0.2);
-  border-top-color: var(--primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 16px;
+.wadah-muat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
-@keyframes spin {
-  100% { transform: rotate(360deg); }
+.cyber-loading-text {
+  font-family: 'Courier New', Courier, monospace;
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  margin-bottom: 20px;
+  animation: pulse-opacity 1s infinite alternate;
 }
 
-/* Status AR Element */
+.cyber-progress-bar {
+  width: 250px;
+  height: 4px;
+  background: rgba(10, 132, 255, 0.15);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(10, 132, 255, 0.3);
+}
+
+.cyber-progress-fill {
+  width: 0%;
+  height: 100%;
+  background: var(--primary);
+  box-shadow: 0 0 15px 3px var(--primary);
+  transition: width 0.05s linear;
+}
+
+.cyber-percentage {
+  font-family: 'Courier New', Courier, monospace;
+  color: white;
+  margin-top: 12px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+@keyframes pulse-opacity {
+  0% {
+    opacity: 0.5;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
 #status-ar {
   position: fixed;
   top: 48px;
@@ -106,7 +142,8 @@ body.ar-active {
 }
 
 #status-ar.active {
-  color: #32d74b; /* iOS Green */
+  color: #32d74b;
+  /* iOS Green */
 }
 
 .spinner {
@@ -120,7 +157,8 @@ body.ar-active {
 
 /* Header Info - Minimalist */
 #kepala {
-  display: none; /* Hide header completely for absolute minimalism */
+  display: none;
+  /* Hide header completely for absolute minimalism */
 }
 
 /* Start / Stop Buttons */
@@ -165,6 +203,33 @@ body.ar-active {
 
 .btn-glowing-danger:active {
   transform: scale(0.95);
+}
+
+/* Tombol Aksi Sukses (Daftar Sekarang) */
+.btn-glowing-success {
+  background: #32d74b;
+  color: #000;
+  border-radius: 100px;
+  padding: 14px 32px;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s;
+  border: none;
+  box-shadow: 0 0 20px rgba(50, 215, 75, 0.4);
+  display: inline-block;
+}
+
+.btn-glowing-success:active {
+  transform: scale(0.95);
+}
+
+/* Tombol CTA di pojok kanan atas layar saat AR Aktif */
+#tombol-daftar {
+  position: fixed;
+  top: 32px;
+  right: 24px;
+  z-index: 1000;
 }
 
 /* Bottom Navigation Dock (Like iPhone Control Center) */
@@ -223,7 +288,8 @@ body.ar-active {
   font-weight: 500;
   cursor: pointer;
   z-index: 100;
-  color: #ff9f0a; /* iOS Orange */
+  color: #ff9f0a;
+  /* iOS Orange */
   pointer-events: auto;
 }
 
@@ -277,7 +343,7 @@ body.ar-active {
   color: var(--bg-base);
 }
 
-/* Scanner Guide Overlay */
+/* Futuristic Scanner HUD */
 #scanner-guide {
   position: fixed;
   top: 0;
@@ -294,24 +360,88 @@ body.ar-active {
 }
 
 .scanner-frame {
-  width: 260px;
-  height: 260px;
+  width: 280px;
+  height: 280px;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1.5px solid rgba(255, 255, 255, 0.2);
-  border-radius: 32px;
+}
+
+/* Corner Brackets */
+.scanner-frame::before,
+.scanner-frame::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 4px solid var(--primary);
+  opacity: 0.8;
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.scanner-frame::before {
+  clip-path: polygon(0 0, 100% 0, 100% 15%, 95% 15%, 95% 5%, 5% 5%, 5% 15%, 0 15%);
+}
+
+.scanner-frame::after {
+  clip-path: polygon(0 100%, 100% 100%, 100% 85%, 95% 85%, 95% 95%, 5% 95%, 5% 85%, 0 85%);
+}
+
+.scanner-frame.locked::before,
+.scanner-frame.locked::after {
+  border-color: #32d74b;
+  transform: scale(0.95);
+  border-width: 6px;
+}
+
+/* Laser Scanline */
+.scanner-laser {
+  position: absolute;
+  top: 0;
+  left: 5%;
+  width: 90%;
+  height: 3px;
+  background: var(--primary);
+  box-shadow: 0 0 15px 3px var(--primary);
+  animation: scanLaser 2s linear infinite alternate;
+}
+
+.scanner-frame.locked .scanner-laser {
+  display: none;
+}
+
+@keyframes scanLaser {
+  0% {
+    top: 10%;
+  }
+
+  100% {
+    top: 90%;
+  }
 }
 
 .scanner-text {
   position: absolute;
   bottom: -60px;
-  padding: 10px 20px;
+  padding: 8px 24px;
   border-radius: 100px;
   font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.5px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--primary);
+  background: rgba(10, 132, 255, 0.1);
+  border: 1px solid rgba(10, 132, 255, 0.3);
+  backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
+}
+
+.scanner-frame.locked .scanner-text {
+  color: #32d74b;
+  background: rgba(50, 215, 75, 0.1);
+  border-color: rgba(50, 215, 75, 0.3);
 }
 
 /* Marker Indicator */
@@ -334,15 +464,87 @@ body.ar-active {
 .pulse-dot {
   width: 8px;
   height: 8px;
-  background-color: #32d74b;
+  background: var(--primary);
   border-radius: 50%;
-  animation: pulse 1.5s infinite;
+  animation: pulse-dot 1.5s infinite;
 }
 
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(50, 215, 75, 0.4); }
-  70% { box-shadow: 0 0 0 8px rgba(50, 215, 75, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(50, 215, 75, 0); }
+@keyframes pulse-dot {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(10, 132, 255, 0.7);
+  }
+
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(10, 132, 255, 0);
+  }
+
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(10, 132, 255, 0);
+  }
+}
+
+/* Modal Tim Pengembang (Tugas UTS) */
+.team-modal {
+  max-width: 600px;
+}
+
+.team-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.team-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+  width: 150px;
+  transition: transform 0.3s ease, background 0.3s ease;
+}
+
+.team-card:hover {
+  transform: translateY(-5px);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.team-photo {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: rgba(10, 132, 255, 0.2);
+  margin: 0 auto 16px auto;
+  background-size: cover;
+  background-position: center;
+  border: 2px solid rgba(10, 132, 255, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.team-photo::after {
+  content: '👤';
+  font-size: 32px;
+  opacity: 0.5;
+}
+
+.team-card h3 {
+  font-size: 14px;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.team-card p {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  font-family: monospace;
 }
 
 /* Modals */
@@ -354,7 +556,8 @@ body.ar-active {
   height: 100%;
   background: rgba(0, 0, 0, 0.4);
   display: flex;
-  align-items: flex-end; /* Bottom sheet style for mobile */
+  align-items: flex-end;
+  /* Bottom sheet style for mobile */
   justify-content: center;
   z-index: 9999;
   opacity: 1;
@@ -385,6 +588,7 @@ body.ar-active {
   .modal {
     align-items: center;
   }
+
   .modal-content {
     border-radius: 24px;
     padding: 32px;
@@ -457,7 +661,7 @@ input[type="checkbox"]::after {
   background: white;
   border-radius: 50%;
   transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 input[type="checkbox"]:checked::after {
@@ -480,7 +684,52 @@ input[type="range"]::-webkit-slider-thumb {
   height: 20px;
   border-radius: 50%;
   background: white;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Onboarding Guide */
+#onboarding-guide {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+
+.hand-icon {
+  font-size: 60px;
+  animation: swipeLeftRight 2s ease-in-out infinite;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+}
+
+.onboarding-text {
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 100px;
+  text-align: center;
+}
+
+@keyframes swipeLeftRight {
+
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+
+  25% {
+    transform: translateX(-40px) rotate(-15deg);
+  }
+
+  75% {
+    transform: translateX(40px) rotate(15deg);
+  }
 }
 
 .hidden {

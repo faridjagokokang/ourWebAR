@@ -1,23 +1,32 @@
-<!DOCTYPE html>
+<!-- 
+  PROYEK UTS: WebAR PMB UNUGHA
+  Deskripsi: Aplikasi Augmented Reality berbasis web untuk interaksi brosur Penerimaan Mahasiswa Baru.
+  Teknologi: HTML5, CSS3 (Glassmorphism), Vanilla JavaScript, A-Frame (3D Engine), MindAR (Image Tracking).
+-->
 <html lang="id">
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>WabAR - PMB UNUGHA</title>
-  <link rel="icon"
-    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>📱</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>📱</text></svg>">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  
+  <!-- Dependensi AR Engine (A-Frame & MindAR) -->
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
 </head>
 
 <body>
+  <!-- Layar Pemuatan (Cyber Loading Screen) -->
   <div id="lapisan-muat" class="hidden">
     <div class="wadah-muat">
-      <div class="loading-spinner"></div>
-      <p>Memuat AR...</p>
+      <div class="cyber-loading-text">[ MENGINISIALISASI SISTEM AR... ]</div>
+      <div class="cyber-progress-bar">
+        <div class="cyber-progress-fill" id="loading-fill"></div>
+      </div>
+      <div class="cyber-percentage" id="loading-pct">0%</div>
     </div>
   </div>
 
@@ -39,6 +48,17 @@
     </button>
   </div>
 
+  <!-- Tombol Pendaftaran (Call-to-Action) -->
+  <div id="wadah-tombol-atas" class="hidden">
+    <a href="https://pmb.unugha.ac.id" target="_blank" id="tombol-daftar" class="btn-glowing-success">
+      📝 Daftar Sekarang
+    </a>
+    <button id="tombol-kuis" class="btn-glowing-info">
+      💡 Tes Jurusan
+    </button>
+  </div>
+
+  <!-- Panel Navigasi Bawah (Control Center iOS Style) -->
   <div id="wadah-kontrol" class="glass-panel">
     <button id="tombol-layar-penuh" class="btn-sidebar" title="Layar Penuh">
       <span class="icon">⛶</span>
@@ -49,6 +69,10 @@
     <button id="tombol-screenshot" class="btn-sidebar" title="Tangkapan Layar">
       <span class="icon">📸</span>
     </button>
+    <!-- Tombol Anggota Kelompok -->
+    <button id="tombol-tim" class="btn-sidebar" title="Tim Pengembang">
+      <span class="icon">👥</span>
+    </button>
     <button id="tombol-pengaturan" class="btn-sidebar" title="Pengaturan">
       <span class="icon">⚙️</span>
     </button>
@@ -56,10 +80,14 @@
 
   <div id="scanner-guide" class="hidden">
     <div class="scanner-frame">
-      <div class="scanner-text glass-panel">
-        Arahkan kamera ke marker
-      </div>
+      <div class="scanner-laser"></div>
+      <div class="scanner-text">[ MEMINDAI TARGET... ]</div>
     </div>
+  </div>
+
+  <div id="onboarding-guide" class="hidden">
+    <div class="hand-icon">👆</div>
+    <div class="onboarding-text glass-panel">Geser layar untuk memutar brosur</div>
   </div>
 
   <div id="scan-problem-btn" class="glass-panel hidden">
@@ -77,7 +105,7 @@
     </div>
   </div>
 
-  <a-scene mindar-image="imageTargetSrc: ./targets.mind; autoStart: false;" color-space="sRGB"
+  <a-scene mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; uiScanning: no; uiLoading: no; filterMinCF: 0.0001; filterBeta: 0.01; missTolerance: 5;" color-space="sRGB"
     renderer="colorManagement: true; antialias: true" vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: false">
     <a-assets>
@@ -92,17 +120,29 @@
       <a-light type="directional" position="0 1 1" intensity="1.2" color="#fff"></a-light>
       <a-light type="ambient" intensity="0.8" color="#fff"></a-light>
 
+      <!-- Cyber Particles Environment -->
+      <a-entity cyber-particles="count: 60; color: #0a84ff"></a-entity>
+
       <a-entity id="brosur-wrapper" class="bisa-diklik" position="0 0 0.1" scale="2 2 2" visible="false"
         data-base-scale="2 2 2">
         <a-entity id="brosur" interaksi-brosur>
-          <a-image src="#gambar-brosur-depan" position="0 0 0.005" width="1" height="1.4" material="side: front">
+          <a-image id="halaman-aktif" src="#gambar-brosur-depan" position="0 0 0.005" width="1" height="1.4" material="side: front">
           </a-image>
-          <a-image src="#gambar-brosur-belakang" position="0 0 -0.005" rotation="0 180 0" width="1" height="1.4"
+          <a-image id="halaman-belakang-aktif" src="#gambar-brosur-belakang" position="0 0 -0.005" rotation="0 180 0" width="1" height="1.4"
             material="side: front">
           </a-image>
+          <a-entity id="halaman-info-3d" position="0 0 0.01" visible="false">
+            <a-plane width="0.9" height="1.3" color="#1c1c1e" opacity="0.95"></a-plane>
+            <a-text value="=== INFO PMB UNUGHA ===\n\nFakultas Tersedia:\n1. Fakultas Komputer\n2. Fakultas Ekonomi\n3. Fakultas Teknik\n4. Fakultas Agama Islam\n\nJadwal Pendaftaran:\nGelombang 1: Jan - Mar\nGelombang 2: Apr - Jun\nGelombang 3: Jul - Sep\n\nKunjungi: pmb.unugha.ac.id" 
+                    color="#0a84ff" position="0 0 0.01" align="center" width="1.5"></a-text>
+          </a-entity>
           <a-box width="1.2" height="1.6" depth="0.05" material="opacity: 0; transparent: true">
           </a-box>
         </a-entity>
+
+        <!-- Virtual AR Buttons -->
+        <a-entity id="ar-btn-prev" class="bisa-diklik" ar-nav-button="prev" position="-0.8 0 0" geometry="primitive: circle; radius: 0.15" material="color: #0a84ff; opacity: 0.8" text="value: <; align: center; color: white; width: 3"></a-entity>
+        <a-entity id="ar-btn-next" class="bisa-diklik" ar-nav-button="next" position="0.8 0 0" geometry="primitive: circle; radius: 0.15" material="color: #0a84ff; opacity: 0.8" text="value: >; align: center; color: white; width: 3"></a-entity>
       </a-entity>
     </a-entity>
   </a-scene>
@@ -124,6 +164,71 @@
           Kontrol Gerakan
           <input type="checkbox" id="gesture-control-toggle" checked>
         </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Anggota Kelompok UTS -->
+  <div id="modal-tim" class="modal hidden">
+    <div class="modal-content team-modal">
+      <span class="modal-close">&times;</span>
+      <h2>Tim Pengembang (Kelompok)</h2>
+      <div class="team-grid">
+        
+        <!-- Ganti info ini dengan nama dan NIM kelompok Anda -->
+        <div class="team-card">
+          <!-- Tambahkan url foto di background-image: url('foto1.jpg') jika ada -->
+          <div class="team-photo" style="background-image: url('');"></div>
+          <h3>Nama Mahasiswa 1</h3>
+          <p>NIM: 123456789</p>
+        </div>
+        
+        <div class="team-card">
+          <div class="team-photo" style="background-image: url('');"></div>
+          <h3>Nama Mahasiswa 2</h3>
+          <p>NIM: 123456789</p>
+        </div>
+        
+        <div class="team-card">
+          <div class="team-photo" style="background-image: url('');"></div>
+          <h3>Nama Mahasiswa 3</h3>
+          <p>NIM: 123456789</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Kuis Penjurusan UTS -->
+  <div id="modal-kuis" class="modal hidden">
+    <div class="modal-content quiz-modal">
+      <span class="modal-close">&times;</span>
+      
+      <!-- Layar Awal Kuis -->
+      <div id="quiz-start" class="quiz-screen">
+        <h2>Asisten Pintar PMB 🤖</h2>
+        <p>Bingung mau masuk Fakultas mana? Jawab 3 pertanyaan singkat ini dan biarkan algoritma cerdas kami merekomendasikan Fakultas yang paling cocok dengan potensimu!</p>
+        <button id="btn-mulai-kuis" class="btn-quiz-primary">Mulai Tes Sekarang</button>
+      </div>
+
+      <!-- Layar Pertanyaan -->
+      <div id="quiz-question" class="quiz-screen hidden">
+        <p class="quiz-progress">Pertanyaan <span id="q-current">1</span> dari 3</p>
+        <h3 id="q-text">Pertanyaan...</h3>
+        <div class="quiz-options" id="q-options">
+          <!-- Opsi di-generate via JS -->
+        </div>
+      </div>
+
+      <!-- Layar Hasil -->
+      <div id="quiz-result" class="quiz-screen hidden">
+        <h2>Rekomendasi Fakultas</h2>
+        <div class="result-card">
+          <h1 id="res-faculty">Fakultas...</h1>
+          <p id="res-desc">Deskripsi...</p>
+        </div>
+        <button class="btn-quiz-primary" onclick="window.open('https://pmb.unugha.ac.id', '_blank')">Lanjut Mendaftar</button>
+        <button id="btn-ulangi-kuis" class="btn-quiz-secondary" style="margin-top: 10px;">Ulangi Tes</button>
       </div>
     </div>
   </div>
