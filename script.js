@@ -2,9 +2,7 @@ const DEFAULT_SCALE = { x: 1.2, y: 1.2, z: 1.2 };
 
 function getScale(el, defaultScale = DEFAULT_SCALE) {
   let scale = el.getAttribute('scale');
-
   if (!scale) return { ...defaultScale };
-
   if (typeof scale === 'string') {
     const parts = scale.split(' ').map(Number);
     return {
@@ -13,7 +11,6 @@ function getScale(el, defaultScale = DEFAULT_SCALE) {
       z: parts[2] || defaultScale.z
     };
   }
-
   return scale;
 }
 
@@ -22,15 +19,13 @@ AFRAME.registerComponent('interaksi-brosur', {
     const el = this.el;
     el.diputar = false;
 
-    const baseScale = getScale(el, DEFAULT_SCALE);
-
     el.addEventListener('mouseenter', () => {
       el.classList.add('hover-state');
       if (typeof putarSuara === 'function') putarSuara('hover');
 
       el.removeAttribute('animation__hover_scale');
       el.setAttribute('animation__hover_scale',
-        `property: scale; to: ${baseScale.x * 1.05} ${baseScale.y * 1.05} ${baseScale.z * 1.05}; dur: 300; easing: easeOutQuad`);
+        `property: scale; to: 1.05 1.05 1.05; dur: 300; easing: easeOutQuad`);
     });
 
     el.addEventListener('mouseleave', () => {
@@ -38,17 +33,13 @@ AFRAME.registerComponent('interaksi-brosur', {
 
       el.removeAttribute('animation__hover_scale');
       el.setAttribute('animation__hover_scale',
-        `property: scale; to: ${baseScale.x} ${baseScale.y} ${baseScale.z}; dur: 300; easing: easeOutQuad`);
+        `property: scale; to: 1 1 1; dur: 300; easing: easeOutQuad`);
     });
 
     let lastTap = 0;
 
     function toggleRotate(e) {
-      if (e) {
-
-        if (typeof e.stopPropagation === 'function') e.stopPropagation();
-      }
-
+      if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
       const now = Date.now();
       if (now - lastTap < 300) return;
       lastTap = now;
@@ -66,25 +57,11 @@ AFRAME.registerComponent('interaksi-brosur', {
     }
 
     el.addEventListener('click', toggleRotate);
-    el.addEventListener('mousedown', toggleRotate); // 
+    el.addEventListener('mousedown', toggleRotate);
     el.addEventListener('touchstart', toggleRotate);
   }
 });
 
-function tampilkanInfoModel() {
-  const titleEl = document.querySelector('#judul-modal');
-  const bodyEl = document.querySelector('#isi-modal');
-  const modalEl = document.querySelector('#modal-info-model');
-
-  if (titleEl) titleEl.textContent = "📄 Pamflet PMB";
-  if (bodyEl) {
-    bodyEl.innerHTML = `
-      <p>Brosur interaktif Penerimaan Mahasiswa Baru.</p>
-    `;
-  }
-
-  if (modalEl) modalEl.classList.remove('hidden');
-}
 let suaraAktif = localStorage.getItem('wabAR_sound') !== 'false';
 
 const sounds = {
@@ -98,7 +75,6 @@ let audioUnlocked = false;
 
 function unlockAudio() {
   if (audioUnlocked) return;
-
   Object.values(sounds).forEach(sound => {
     sound.volume = 1;
     sound.play().then(() => {
@@ -106,7 +82,6 @@ function unlockAudio() {
       sound.currentTime = 0;
     }).catch(() => { });
   });
-
   audioUnlocked = true;
 }
 
@@ -115,17 +90,12 @@ document.addEventListener('touchstart', unlockAudio, { once: true });
 
 function putarSuara(type) {
   if (!suaraAktif || !audioUnlocked) return;
-
   const sound = sounds[type];
   if (sound) {
     sound.currentTime = 0;
-    sound.play().catch(err => {
-      console.log('Audio gagal:', err);
-    });
+    sound.play().catch(err => console.log('Audio gagal:', err));
   }
 }
-
-let waktuMulaiTampilan = 0;
 
 document.addEventListener('DOMContentLoaded', () => {
   const sceneEl = document.querySelector('a-scene');
@@ -133,27 +103,30 @@ document.addEventListener('DOMContentLoaded', () => {
   const stopBtn = document.querySelector('#tombol-henti');
   const statusEl = document.querySelector('#status-ar');
   const loadingOverlay = document.querySelector('#lapisan-muat');
+  
+  // Sidebar Buttons
   const fullscreenBtn = document.querySelector('#tombol-layar-penuh');
-  const infoToggleBtn = document.querySelector('#tombol-info');
   const soundToggleBtn = document.querySelector('#tombol-suara');
-  const themeToggleBtn = document.querySelector('#tombol-tema');
   const screenshotBtn = document.querySelector('#tombol-screenshot');
-  const settingsBtn = document.querySelector('#tombol-pengaturan');
-  const helpBtn = document.querySelector('#tombol-bantuan');
-  const aboutBtn = document.querySelector('#tombol-tentang');
+  const settingsToggleBtn = document.querySelector('#tombol-pengaturan');
+  
+  // Other Elements
+  const scanProblemBtn = document.querySelector('#scan-problem-btn');
   const modelControlsDiv = document.querySelector('#kontrol-model');
   const markerIndicator = document.querySelector('#indikator-marker');
-
-  const darkModeEnabled = localStorage.getItem('wabAR_darkMode') === 'true';
-  if (darkModeEnabled) {
-    document.body.classList.add('dark-mode');
-    if (themeToggleBtn) themeToggleBtn.classList.add('active');
-  }
+  
+  // Settings Inputs
+  const autoRotateToggle = document.querySelector('#toggle-rotasi-otomatis');
+  const animationSpeedInput = document.querySelector('#kecepatan-animasi');
+  const speedValueText = document.querySelector('#nilai-kecepatan');
+  const gestureControlToggle = document.querySelector('#gesture-control-toggle');
 
   let arActive = false;
-  let rotasiOtomatisAktif = false;
+  let rotasiOtomatisAktif = autoRotateToggle ? autoRotateToggle.checked : false;
+  let kecepatanAnimasi = animationSpeedInput ? parseInt(animationSpeedInput.value) : 5;
+  let gestureAktif = gestureControlToggle ? gestureControlToggle.checked : true;
+  let scanTimeout;
   let touchStartX = 0;
-  let touchStartY = 0;
   let lastTouchTime = 0;
 
   function perbaruiStatus(text, isActive = false) {
@@ -162,11 +135,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function tampilkanLoading(show = true) {
-    if (show) {
-      loadingOverlay.classList.remove('hidden');
-    } else {
-      loadingOverlay.classList.add('hidden');
-    }
+    if (show) loadingOverlay.classList.remove('hidden');
+    else loadingOverlay.classList.add('hidden');
   }
 
   startBtn.addEventListener('click', () => {
@@ -175,162 +145,161 @@ document.addEventListener('DOMContentLoaded', () => {
     perbaruiStatus('Memulai AR...', false);
     tampilkanLoading(true);
 
-    try {
-      setTimeout(() => {
+    setTimeout(() => {
+      try {
+        if (!sceneEl.systems['mindar-image-system']) {
+          throw new Error("Sistem AR belum dimuat sepenuhnya. Coba muat ulang halaman.");
+        }
+        
         document.body.classList.add('ar-active');
+        document.documentElement.classList.add('ar-active');
+        
         sceneEl.systems['mindar-image-system'].start();
         tampilkanLoading(false);
         arActive = true;
-        waktuMulaiTampilan = Date.now();
 
         setTimeout(() => {
           startBtn.style.display = 'none';
-          perbaruiStatus('✓ AR Aktif - Arahkan ke marker', true);
+          perbaruiStatus('AR Aktif', true);
           modelControlsDiv.classList.remove('hidden');
 
           const scannerGuide = document.querySelector('#scanner-guide');
-          const scanProblemBtn = document.querySelector('#scan-problem-btn');
           if (scannerGuide) scannerGuide.classList.remove('hidden');
-          if (scanProblemBtn) scanProblemBtn.classList.remove('hidden');
-
           putarSuara('success');
         }, 1000);
-      }, 1500);
-    } catch (error) {
-      console.error('Error memulai AR:', error);
-      startBtn.disabled = false;
-      tampilkanLoading(false);
-      perbaruiStatus('❌ Gagal memulai AR', false);
-      putarSuara('error');
-    }
+      } catch (error) {
+        console.error('Error memulai AR:', error);
+        startBtn.disabled = false;
+        tampilkanLoading(false);
+        perbaruiStatus('Gagal: ' + error.message, false);
+        putarSuara('error');
+        alert("Gagal mengakses kamera. Pastikan Anda memberikan izin kamera atau menggunakan HTTPS / Live Server.");
+      }
+    }, 1500);
   });
 
   stopBtn.addEventListener('click', () => {
     arActive = false;
     document.body.classList.remove('ar-active');
+    document.documentElement.classList.remove('ar-active');
     stopBtn.classList.add('hidden');
     startBtn.style.display = 'block';
     startBtn.disabled = false;
     modelControlsDiv.classList.add('hidden');
 
     const scannerGuide = document.querySelector('#scanner-guide');
-    const scanProblemBtn = document.querySelector('#scan-problem-btn');
     if (scannerGuide) scannerGuide.classList.add('hidden');
     if (scanProblemBtn) scanProblemBtn.classList.add('hidden');
+    if (scanTimeout) clearTimeout(scanTimeout);
 
     perbaruiStatus('Menghentikan AR...', false);
     tampilkanLoading(true);
 
     try {
       sceneEl.systems['mindar-image-system'].stop();
-
       setTimeout(() => {
         tampilkanLoading(false);
-        perbaruiStatus('✓ Siap untuk AR', false);
+        perbaruiStatus('Siap untuk AR', false);
         putarSuara('click');
       }, 1000);
     } catch (error) {
       console.error('Error menghentikan AR:', error);
-      perbaruiStatus('⚠️ Error menghentikan AR', false);
+      perbaruiStatus('Error menghentikan AR', false);
       putarSuara('error');
     }
   });
 
   fullscreenBtn.addEventListener('click', () => {
     const elem = document.documentElement;
-
     if (!document.fullscreenElement) {
-      if (elem.requestFullscreen) {
-        elem.requestFullscreen().catch(err => console.log(err));
-      } else if (elem.webkitRequestFullscreen) {
-        elem.webkitRequestFullscreen();
-      } else if (elem.mozRequestFullScreen) {
-        elem.mozRequestFullScreen();
-      } else if (elem.msRequestFullscreen) {
-        elem.msRequestFullscreen();
-      }
+      if (elem.requestFullscreen) elem.requestFullscreen().catch(err => console.log(err));
+      else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
       fullscreenBtn.classList.add('active');
       putarSuara('click');
     } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-      } else if (document.mozCancelFullScreen) {
-        document.mozCancelFullScreen();
-      } else if (document.msExitFullscreen) {
-        document.msExitFullscreen();
-      }
+      if (document.exitFullscreen) document.exitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
       fullscreenBtn.classList.remove('active');
     }
   });
 
-  infoToggleBtn.addEventListener('click', () => {
-    const modal = document.querySelector('#modal-info-model');
-    const titleEl = document.querySelector('#judul-modal');
-    const bodyEl = document.querySelector('#isi-modal');
-
-    if (titleEl) titleEl.textContent = "📄 Pamflet PMB (Detail)";
-    if (bodyEl) {
-      bodyEl.innerHTML = `
-      <img src="./pamflet.jpg" style="width:100%; border-radius:10px;" />
-    `;
-    }
-
-    if (modal) modal.classList.remove('hidden');
-
-    putarSuara('click');
-  });
-
+  // Sound Toggle
+  if (!suaraAktif) soundToggleBtn.classList.remove('active');
   soundToggleBtn.addEventListener('click', () => {
     suaraAktif = !suaraAktif;
     soundToggleBtn.classList.toggle('active');
     localStorage.setItem('wabAR_sound', suaraAktif);
-    if (suaraAktif) {
-      putarSuara('success');
-    }
+    if (suaraAktif) putarSuara('success');
   });
 
-  themeToggleBtn.addEventListener('click', () => {
-    document.body.classList.toggle('dark-mode');
-    const isDarkMode = document.body.classList.contains('dark-mode');
-    localStorage.setItem('wabAR_darkMode', isDarkMode);
-    themeToggleBtn.classList.toggle('active');
-    putarSuara('click');
-  });
+  // Modals Toggles
+  if (settingsToggleBtn) {
+    settingsToggleBtn.addEventListener('click', () => {
+      document.querySelector('#modal-pengaturan').classList.remove('hidden');
+      putarSuara('click');
+    });
+  }
+
+  // Scan Problem Action
+  if (scanProblemBtn) {
+    scanProblemBtn.addEventListener('click', () => {
+      perbaruiStatus('Memuat ulang...', false);
+      if (sceneEl.systems['mindar-image-system']) {
+        sceneEl.systems['mindar-image-system'].stop();
+        setTimeout(() => {
+          sceneEl.systems['mindar-image-system'].start();
+          scanProblemBtn.classList.add('hidden');
+        }, 1000);
+      }
+      putarSuara('click');
+    });
+  }
 
   screenshotBtn.addEventListener('click', () => {
-    const canvas = document.querySelector('a-scene canvas');
-    if (canvas) {
+    const aframeCanvas = sceneEl.canvas;
+    const video = document.querySelector('video');
+
+    if (aframeCanvas) {
+      const canvas = document.createElement('canvas');
+      canvas.width = aframeCanvas.width;
+      canvas.height = aframeCanvas.height;
+      const ctx = canvas.getContext('2d');
+
+      if (video) {
+        const videoRatio = video.videoWidth / video.videoHeight;
+        const canvasRatio = canvas.width / canvas.height;
+        let drawWidth, drawHeight, startX, startY;
+
+        if (videoRatio > canvasRatio) {
+          drawHeight = canvas.height;
+          drawWidth = canvas.height * videoRatio;
+          startX = (canvas.width - drawWidth) / 2;
+          startY = 0;
+        } else {
+          drawWidth = canvas.width;
+          drawHeight = canvas.width / videoRatio;
+          startX = 0;
+          startY = (canvas.height - drawHeight) / 2;
+        }
+        ctx.drawImage(video, startX, startY, drawWidth, drawHeight);
+      }
+
+      ctx.drawImage(aframeCanvas, 0, 0, canvas.width, canvas.height);
+
       const link = document.createElement('a');
       link.href = canvas.toDataURL('image/png');
-      link.download = `wabAR_screenshot_${Date.now()}.png`;
+      link.download = `WabAR_${Date.now()}.png`;
       link.click();
       putarSuara('success');
-      perbaruiStatus('📸 Screenshot tersimpan!', true);
+      perbaruiStatus('Screenshot tersimpan!', true);
       setTimeout(() => {
-        perbaruiStatus(arActive ? '✓ AR Aktif' : '✓ Siap untuk AR', arActive);
+        perbaruiStatus(arActive ? 'AR Aktif' : 'Siap untuk AR', arActive);
       }, 2000);
     }
   });
 
   const modals = document.querySelectorAll('.modal');
   const modalCloses = document.querySelectorAll('.modal-close');
-
-  settingsBtn.addEventListener('click', () => {
-    const modal = document.querySelector('#modal-pengaturan');
-    if (modal) modal.classList.remove('hidden');
-  });
-
-  helpBtn.addEventListener('click', () => {
-    const modal = document.querySelector('#modal-bantuan');
-    if (modal) modal.classList.remove('hidden');
-  });
-
-  aboutBtn.addEventListener('click', () => {
-    const modal = document.querySelector('#modal-tentang');
-    if (modal) modal.classList.remove('hidden');
-  });
 
   modalCloses.forEach(closeBtn => {
     closeBtn.addEventListener('click', () => {
@@ -349,27 +318,31 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  const inputKecepatanAnimasi = document.querySelector('#kecepatan-animasi');
-  const nilaiKecepatan = document.querySelector('#nilai-kecepatan');
-  const toggleRotasiOtomatis = document.querySelector('#toggle-rotasi-otomatis');
-
-  if (inputKecepatanAnimasi) {
-    inputKecepatanAnimasi.addEventListener('input', (e) => {
-      if (nilaiKecepatan) nilaiKecepatan.textContent = e.target.value;
-      const speed = parseInt(e.target.value);
-      const animSpeed = 8000 - (speed - 1) * 500;
-      document.querySelectorAll('[animation]').forEach(el => {
-        el.setAttribute('animation', `property: rotation; to: 0 360 0; dur: ${animSpeed}; easing: linear; loop: true`);
-      });
+  // Settings Handlers
+  if (autoRotateToggle) {
+    autoRotateToggle.addEventListener('change', (e) => {
+      rotasiOtomatisAktif = e.target.checked;
+      const autoRotateBtn = document.querySelector('#tombol-putar-otomatis');
+      if (autoRotateBtn) autoRotateBtn.classList.toggle('active', rotasiOtomatisAktif);
+      putarSuara('click');
     });
   }
 
-  if (toggleRotasiOtomatis) {
-    toggleRotasiOtomatis.addEventListener('change', () => {
-      rotasiOtomatisAktif = toggleRotasiOtomatis.checked;
+  if (animationSpeedInput) {
+    animationSpeedInput.addEventListener('input', (e) => {
+      kecepatanAnimasi = parseInt(e.target.value);
+      if (speedValueText) speedValueText.textContent = kecepatanAnimasi;
     });
   }
 
+  if (gestureControlToggle) {
+    gestureControlToggle.addEventListener('change', (e) => {
+      gestureAktif = e.target.checked;
+      putarSuara('click');
+    });
+  }
+
+  // Model Control Buttons
   const rotateLeftBtn = document.querySelector('#putar-kiri');
   const rotateRightBtn = document.querySelector('#putar-kanan');
   const zoomInBtn = document.querySelector('#perbesar');
@@ -377,88 +350,48 @@ document.addEventListener('DOMContentLoaded', () => {
   const autoRotateBtn = document.querySelector('#tombol-putar-otomatis');
   const resetBtn = document.querySelector('#tombol-atur-ulang');
 
-  if (rotateLeftBtn) {
-    rotateLeftBtn.addEventListener('click', () => {
-      putarModel(-15);
-      putarSuara('click');
-    });
-  }
-
-  if (rotateRightBtn) {
-    rotateRightBtn.addEventListener('click', () => {
-      putarModel(15);
-      putarSuara('click');
-    });
-  }
-
-  if (zoomInBtn) {
-    zoomInBtn.addEventListener('click', () => {
-      perbesarModel(1.1);
-      putarSuara('click');
-    });
-  }
-
-  if (zoomOutBtn) {
-    zoomOutBtn.addEventListener('click', () => {
-      perbesarModel(0.9);
-      putarSuara('click');
-    });
-  }
-
+  if (rotateLeftBtn) rotateLeftBtn.addEventListener('click', () => { putarModel(-15); putarSuara('click'); });
+  if (rotateRightBtn) rotateRightBtn.addEventListener('click', () => { putarModel(15); putarSuara('click'); });
+  if (zoomInBtn) zoomInBtn.addEventListener('click', () => { perbesarModel(1.1); putarSuara('click'); });
+  if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => { perbesarModel(0.9); putarSuara('click'); });
+  
   if (autoRotateBtn) {
+    if (rotasiOtomatisAktif) autoRotateBtn.classList.add('active');
     autoRotateBtn.addEventListener('click', () => {
       rotasiOtomatisAktif = !rotasiOtomatisAktif;
       autoRotateBtn.classList.toggle('active');
+      if (autoRotateToggle) autoRotateToggle.checked = rotasiOtomatisAktif;
       putarSuara('click');
     });
   }
 
-  if (resetBtn) {
-    resetBtn.addEventListener('click', () => {
-      aturUlangModel();
-      putarSuara('success');
-    });
-  }
+  if (resetBtn) resetBtn.addEventListener('click', () => { aturUlangModel(); putarSuara('success'); });
 
   let modelRotation = 0;
-  let modelScale = { x: 1.2, y: 1.2, z: 1.2 };
 
   function putarModel(degrees) {
     modelRotation += degrees;
-    const models = document.querySelectorAll('.bisa-diklik');
+    const models = document.querySelectorAll('.kontrol-ui');
     models.forEach(model => {
-      if (!model.hasAttribute('interaksi-brosur')) {
-        model.setAttribute('rotation', `0 ${modelRotation} 0`);
-      }
+      model.setAttribute('rotation', `0 ${modelRotation} 0`);
     });
   }
 
   function perbesarModel(factor) {
-    const models = document.querySelectorAll('.bisa-diklik');
+    const models = document.querySelectorAll('.kontrol-ui');
     models.forEach(model => {
       let currentScale = getScale(model, { x: 1, y: 1, z: 1 });
-      if (typeof currentScale === 'string') {
-        const parts = currentScale.split(' ').map(parseFloat);
-        currentScale = { x: parts[0], y: parts[1], z: parts[2] };
-      }
       model.setAttribute('scale', `${currentScale.x * factor} ${currentScale.y * factor} ${currentScale.z * factor}`);
     });
   }
 
   function aturUlangModel() {
     modelRotation = 0;
-    modelScale = { x: 1.2, y: 1.2, z: 1.2 };
-    const models = document.querySelectorAll('.bisa-diklik');
+    const models = document.querySelectorAll('.kontrol-ui');
     models.forEach(model => {
       model.setAttribute('rotation', '0 0 0');
-      
-      const baseScale = model.getAttribute('data-base-scale') || '1.2 1.2 1.2';
+      const baseScale = model.getAttribute('data-base-scale') || '2 2 2';
       model.setAttribute('scale', baseScale);
-      
-      if (model.hasAttribute('interaksi-brosur')) {
-        model.removeAttribute('animation__rot');
-        model.diputar = false;
-      }
     });
 
     const brosurInner = document.querySelector('#brosur');
@@ -470,12 +403,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   document.addEventListener('touchstart', (e) => {
-    isDragging = false;
-
     touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
     const currentTime = Date.now();
-
     if (currentTime - lastTouchTime < 300) {
       aturUlangModel();
       putarSuara('success');
@@ -484,19 +413,13 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.addEventListener('touchmove', (e) => {
-    isDragging = true;
-
-    if (!arActive || rotasiOtomatisAktif) return;
-
+    if (!arActive || rotasiOtomatisAktif || !gestureAktif) return;
     const touchEndX = e.touches[0].clientX;
     const diffX = touchEndX - touchStartX;
 
     if (Math.abs(diffX) > 50) {
-      if (diffX > 0) {
-        putarModel(5);
-      } else {
-        putarModel(-5);
-      }
+      if (diffX > 0) putarModel(5);
+      else putarModel(-5);
       touchStartX = touchEndX;
     }
   });
@@ -506,53 +429,55 @@ document.addEventListener('DOMContentLoaded', () => {
   targetEntities.forEach((entity) => {
     entity.addEventListener('targetFound', () => {
       if (arActive) {
-        perbaruiStatus('✅ Marker Terdeteksi!', true);
+        if(scanTimeout) clearTimeout(scanTimeout);
+        if (scanProblemBtn) scanProblemBtn.classList.add('hidden');
+
+        perbaruiStatus('Marker Terdeteksi!', true);
         if (markerIndicator) markerIndicator.classList.remove('hidden');
         putarSuara('success');
 
         const scannerGuide = document.querySelector('#scanner-guide');
         if (scannerGuide) scannerGuide.classList.add('hidden');
 
-        const models = entity.querySelectorAll('.bisa-diklik');
+        const models = entity.querySelectorAll('.kontrol-ui');
         models.forEach(model => {
           model.setAttribute('visible', 'true');
-          const currentScale = getScale(model, { x: 1, y: 1, z: 1 });
-          model.setAttribute('scale', `${currentScale.x} ${currentScale.y} ${currentScale.z}`);
         });
       }
     });
 
     entity.addEventListener('targetLost', () => {
       if (arActive) {
-        perbaruiStatus('🔍 Mencari Marker...', false);
+        perbaruiStatus('Mencari Marker...', false);
         if (markerIndicator) markerIndicator.classList.add('hidden');
 
         const scannerGuide = document.querySelector('#scanner-guide');
         if (scannerGuide) scannerGuide.classList.remove('hidden');
+
+        if(scanTimeout) clearTimeout(scanTimeout);
+        scanTimeout = setTimeout(() => {
+          if (scanProblemBtn) scanProblemBtn.classList.remove('hidden');
+        }, 5000);
       }
     });
   });
 
   setInterval(() => {
     if (rotasiOtomatisAktif && arActive) {
-      modelRotation += 1;
-      const models = document.querySelectorAll('.bisa-diklik');
+      modelRotation += (kecepatanAnimasi * 0.2);
+      const models = document.querySelectorAll('.kontrol-ui');
       models.forEach(model => {
-        if (!model.hasAttribute('interaksi-brosur')) {
-          model.setAttribute('rotation', `0 ${modelRotation} 0`);
-        }
+        model.setAttribute('rotation', `0 ${modelRotation} 0`);
       });
     }
   }, 30);
 
   sceneEl.addEventListener('loaded', () => {
-    console.log('A-Frame scene dimuat');
-    perbaruiStatus('✓ Siap untuk AR', false);
+    perbaruiStatus('Siap untuk AR', false);
   });
 
   window.addEventListener('error', (event) => {
-    console.error('Error:', event.error);
-    perbaruiStatus('⚠️ Terjadi kesalahan', false);
+    perbaruiStatus('Terjadi kesalahan', false);
     putarSuara('error');
   });
 });
